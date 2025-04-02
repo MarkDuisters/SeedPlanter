@@ -26,8 +26,6 @@ This is an editor script designed for Unity that allows you to populate a surfac
 3. Set a prefab and modify its settings.
 4. Use the populator tool to spawn objects based on the configured settings.
 
-![alt text](https://github.com/MarkDuisters/SeedPlanter/blob/main/images/create%20seed.gif)
-
 ## Notes
 
 - This tool **does not modify terrain data**, it only spawns GameObjects.
@@ -42,3 +40,6 @@ This project is open-source. Feel free to modify and use it in your projects.
 
 Have fun! 🌲🌿🏡
 
+![alt text](https://github.com/MarkDuisters/SeedPlanter/blob/main/images/create%20seed.gif)
+![alt text](https://github.com/MarkDuisters/SeedPlanter/blob/main/images/place%20planter.gif)
+![alt text](https://github.com/MarkDuisters/SeedPlanter/blob/main/images/plant%20trees.gif)
