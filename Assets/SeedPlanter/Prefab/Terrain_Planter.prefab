@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &7847182170987548322
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 9216583720290211689}
+  - component: {fileID: 4099238495597935313}
+  m_Layer: 0
+  m_Name: Terrain_Planter
+  m_TagString: Untagged
+  m_Icon: {fileID: 3936346786652291628, guid: 0000000000000000d000000000000000, type: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &9216583720290211689
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7847182170987548322}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.7071068, y: 0, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: 238, y: 110, z: 456}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: -90, y: 0, z: 0}
+--- !u!114 &4099238495597935313
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7847182170987548322}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 66023e2f2643cf44a8209133116a73db, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  spawnShape: 1
+  shapeRadius: 500
+  objectCount: 1000
+  randomizePointInShape: 1
+  allignToSurface: 1
+  layersToHit:
+    serializedVersion: 2
+    m_Bits: 27
+  spawnList:
+  - {fileID: 11400000, guid: 7702e34a5e7a3c04fa3925b0d6bf3403, type: 2}
+  - {fileID: 11400000, guid: 40a82750e4450ce4fa2c00f0842bc6cf, type: 2}
+  - {fileID: 11400000, guid: 5296894e7ec7b78439244257f9151b45, type: 2}
+  occupiedPositionsList: []
+  showDebugGizmos: 1
