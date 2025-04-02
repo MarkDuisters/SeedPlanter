@@ -13,7 +13,7 @@ GameObject:
   m_Layer: 0
   m_Name: Terrain_Planter
   m_TagString: Untagged
-  m_Icon: {fileID: 3936346786652291628, guid: 0000000000000000d000000000000000, type: 0}
+  m_Icon: {fileID: 2800000, guid: 56c99f7d1a45e75448c3766f2f3e495c, type: 3}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
@@ -45,8 +45,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   spawnShape: 1
-  shapeRadius: 500
-  objectCount: 1000
+  shapeRadius: 350
+  objectCount: 500
   randomizePointInShape: 1
   allignToSurface: 1
   layersToHit:
