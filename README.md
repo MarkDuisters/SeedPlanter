@@ -41,6 +41,7 @@ This project is open-source. Feel free to modify and use it in your projects.
 Have fun! 🌲🌿🏡
 
 <img src="https://github.com/MarkDuisters/SeedPlanter/blob/main/images/place%20planter.gif" width="512" height="1090">
-![Create Seed](https://github.com/MarkDuisters/SeedPlanter/blob/main/images/create%20seed.gif)
-![Plant Trees](https://github.com/MarkDuisters/SeedPlanter/blob/main/images/plant%20trees.gif)
+![](https://github.com/MarkDuisters/SeedPlanter/blob/main/images/create%20seed.gif)
+![](https://github.com/MarkDuisters/SeedPlanter/blob/main/images/plant%20trees.gif)
+
 
