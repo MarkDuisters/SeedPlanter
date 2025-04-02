@@ -42,4 +42,4 @@ Have fun! 🌲🌿🏡
 
 ![alt text](https://github.com/MarkDuisters/SeedPlanter/blob/main/images/create%20seed.gif)
 ![alt text](https://github.com/MarkDuisters/SeedPlanter/blob/main/images/plant%20trees.gif)
-<img src="https://github.com/MarkDuisters/SeedPlanter/blob/main/images/place%20planter.gif" width="500" height="300">
+<img src="https://github.com/MarkDuisters/SeedPlanter/blob/main/images/place%20planter.gif" width="512" height="1090">
