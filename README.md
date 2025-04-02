@@ -41,10 +41,10 @@ This project is open-source. Feel free to modify and use it in your projects.
 Have fun! 🌲🌿🏡
 
 
-<div style="display: flex; align-items: flex-start;">
-  <img src="https://github.com/MarkDuisters/SeedPlanter/blob/main/images/place%20planter.gif" width="512" height="1090" style="margin-right: 10px;">
-  <div>
-    <img src="https://github.com/MarkDuisters/SeedPlanter/blob/main/images/create%20seed.gif" style="margin-bottom: 10px;">
-    <img src="https://github.com/MarkDuisters/SeedPlanter/blob/main/images/plant%20trees.gif">
-  </div>
+<div style="display: inline-block; vertical-align: top; width: 500px; height: 1090px;">
+  <img src="https://github.com/MarkDuisters/SeedPlanter/blob/main/images/place%20planter.gif" width="512" height="1090">
+</div>
+<div style="display: inline-block; vertical-align: top; margin-left: 10px;">
+  <img src="https://github.com/MarkDuisters/SeedPlanter/blob/main/images/create%20seed.gif" style="margin-bottom: 10px;">
+  <img src="https://github.com/MarkDuisters/SeedPlanter/blob/main/images/plant%20trees.gif">
 </div>
