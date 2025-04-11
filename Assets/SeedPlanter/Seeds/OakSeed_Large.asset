@@ -22,3 +22,4 @@ MonoBehaviour:
   scaleMaximum: {x: 6, y: 8, z: 6}
   closestAlowedNeighbour: 4
   maximumNeighbours: 100
+  maxAngle: 6
