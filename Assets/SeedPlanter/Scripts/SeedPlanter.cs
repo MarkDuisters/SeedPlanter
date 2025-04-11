@@ -1,13 +1,14 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Random = UnityEngine.Random;
+using UnityEditor;
 
 [ExecuteInEditMode]
 public class SeedPlanter : MonoBehaviour
 {
+    enum WindNoiceType { Random, Perlin }
     enum SpawnShape { Sphere, HemiSphere };
     [Header("Spawner options")]
     [SerializeField] SpawnShape spawnShape = SpawnShape.Sphere;
@@ -15,43 +16,111 @@ public class SeedPlanter : MonoBehaviour
     [SerializeField] int objectCount = 1;
     [SerializeField] bool randomizePointInShape = false;
     [SerializeField] bool allignToSurface = false;
-    [SerializeField] LayerMask layersToHit = -1;
     [SerializeField] SeedScriptableObject[] spawnList;
-    [SerializeField] List<Vector3> occupiedPositionsList;
+    [SerializeField] List<OccupiedPositionInfo> occupiedPositionsList;
+    [Header("Raytrace settings")]
+    [SerializeField] LayerMask layersToHit = -1;
+    [Header("Raymarch settings")]
+    [Tooltip("When enabled a per interval distance step will be taken. This gives the oppurtunity for a more organic position at the cost of more computation. When dissabled a single direction raycast will be used instead.")]
+    [SerializeField] bool useRaymarching = false;
+    [SerializeField] float stepDistance = 0.1f;
+    [SerializeField] Vector3 forceDirection = new Vector3(0, -9.81f, 0); // Adjusted gravity to Earth standard
+    [SerializeField] Vector3 wind = Vector3.zero;
+    [SerializeField] WindNoiceType windTurbulence = WindNoiceType.Random;
+    [SerializeField] float turbulence = 0.1f; // Randomizer value
+    [Tooltip("Adjust the turbulence strength of the wind.")]
+    [SerializeField] float turbulenceStrength = 0.1f;
+    [SerializeField] int maxSteps = 100;
     [Header("Debugging")]
     public bool showDebugGizmos = false;
 
     [Button]
     [ContextMenu("Plant Seeds")]
-    void PlantSeeds()
+    void PlantSeedsOld()
     {
-
         DestroyAllChildren();
 
-        int i = 0;
-        while (i < objectCount)
+        for (int i = 0; i < objectCount; i++)
         {
+            CalculateSeedPositions();
 
-            Vector3 rayDirection = GetRayDirection();
-            Vector3 position = GetPositionInSphere();
-            Ray ray = new Ray(position, rayDirection);
-
-            if (showDebugGizmos) Debug.DrawRay(ray.origin, ray.direction * shapeRadius, Color.blue, 2f);
-
-            if (Physics.Raycast(ray, out RaycastHit hit, shapeRadius, layersToHit))
+            foreach (OccupiedPositionInfo info in occupiedPositionsList)
             {
-                Transform go = ObjectFabricator(hit.point)?.transform;
-                if (go == null) return;
-                go.rotation = AllignToSurface(hit.normal, go.up) * go.rotation;
+                GameObject getObject = ObjectFabricator(info);
+                if (getObject == null) continue;
 
-                if (showDebugGizmos) Debug.DrawLine(position, hit.point, Color.green, 2f);
+                getObject.transform.parent = transform;
+                getObject.transform.rotation = AllignToSurface(info.normal, getObject.transform.up);
             }
-
-            i++;
-
         }
     }
 
+    void CalculateSeedPositions()
+    {
+        Vector3 currentDirection = GetRayDirection().normalized;
+        Vector3 currentPosition = GetPositionInSphere();
+        Vector3 velocity = currentDirection * stepDistance;
+
+        Vector3 gravityAcceleration = forceDirection; // Direct gravity application
+
+        // Wind oscillation based on time in the editor
+        Vector3 windForce = wind * 0.1f;
+
+        Vector3 oldPosition = currentPosition;
+
+        for (int i = 0; i < maxSteps; i++)
+        {
+            // Apply gravity, wind, and   noise to velocity
+            windForce += windTurbulence == WindNoiceType.Perlin ? PerlinNoiseWindForce() : RandomVector();
+            velocity += gravityAcceleration * stepDistance / maxSteps + windForce * stepDistance / maxSteps;
+            currentPosition += velocity * stepDistance;
+            // Check for collisions (raycasting)
+            if (Physics.Raycast(oldPosition, currentPosition - oldPosition, out RaycastHit hit, stepDistance, layersToHit))
+            {
+                if (showDebugGizmos) Debug.DrawLine(oldPosition, hit.point, Color.green, 2f);  // Visualize the hit
+                OccupiedPositionInfo info = new OccupiedPositionInfo(hit.point, false, Mathf.Abs(Vector3.Angle(Vector3.up, hit.normal)), hit.normal);
+
+                occupiedPositionsList.Add(info);
+                break;  // Stop if a collision is hit
+            }
+
+            if (showDebugGizmos) Debug.DrawLine(oldPosition, currentPosition, new Color((i + 0.01f) / maxSteps, 0f, 0f), 2f);
+
+            oldPosition = currentPosition;
+        }
+
+
+
+    }
+
+    Vector3 RandomVector()
+    {
+        float x, y, z;
+        x = Random.Range(-turbulence, turbulence);
+        y = Random.Range(-turbulence, turbulence);
+        z = Random.Range(-turbulence, turbulence);
+        return new Vector3(x, y, z).normalized * turbulenceStrength;
+    }
+
+    Vector3 PerlinNoiseWindForce()
+    {
+        // Use Perlin noise to create smooth, oscillating turbulence.
+        float timeFactor = (float)EditorApplication.timeSinceStartup;
+
+        // Use Perlin noise to create oscillating forces over time
+        float xForce = Mathf.PerlinNoise(timeFactor * turbulence, 0); // X-axis turbulence
+        float yForce = Mathf.PerlinNoise(timeFactor * turbulence, timeFactor * turbulence);
+        float zForce = Mathf.PerlinNoise(0, timeFactor * turbulence); // Z-axis turbulence
+
+        float lerpedX = Mathf.Lerp(-1f, 1f, xForce);
+        float lerpedY = Mathf.Lerp(-1f, 1f, yForce);
+        float lerpedZ = Mathf.Lerp(-1f, 1f, zForce);
+
+
+        Vector3 finalPerlin = new Vector3(lerpedX, lerpedY, lerpedZ);
+        // Return the wind force, scaled by turbulence strength
+        return finalPerlin.normalized * turbulenceStrength;
+    }
     Vector3 GetPositionInSphere()
     {
         Vector3 position = transform.position;
@@ -64,41 +133,34 @@ public class SeedPlanter : MonoBehaviour
                 case SpawnShape.Sphere:
                     return transform.position + position;
                 case SpawnShape.HemiSphere:
-                    position = transform.position + new Vector3(position.x, -Mathf.Abs(position.y), position.z);//force down
+                    position = transform.position + new Vector3(position.x, -Mathf.Abs(position.y), position.z); // Force downward
                     return position;
                 default:
                     return position;
             }
         }
         return position;
-
     }
 
-    //bug bomen ignore max neightbours validation. Waarschijnlijk omdat alles tegelijk in 1 frame spawned zien ze elkaar niet.
-    //mogelijke oplossing, hou een lijst van posities bij van reeds gespawnde objecten.
-    //Maak een methode die op basis van afstand kandidaten zoekt en optelt hoeveel er zijn. 
-    //return true als het aantal objecten kleiner is dan toegestaan, false als het er teveel zijn.
-
-    GameObject ObjectFabricator(Vector3 intersectionPoint)
+    GameObject ObjectFabricator(OccupiedPositionInfo occupiedInfo)
     {
-        SeedScriptableObject getSpawnObject = spawnList[Random.Range(0, spawnList.Length)];//get our object storing the prefab and other info.
-                                                                                           //if false do not spawn, if true continue
-        if (!ValidateSpawnLocation(intersectionPoint, getSpawnObject, occupiedPositionsList))
+        if (occupiedInfo.occupied) return null;//This position already has an object.
+
+        SeedScriptableObject getSpawnObject = spawnList[Random.Range(0, spawnList.Length)]; // Get spawn object
+        if (!ValidateSpawnLocation(getSpawnObject, occupiedInfo))
         {
-            print("invalid.");
+            //   print("Invalid spawn location.");
             return null;
         }
-        GameObject go = Instantiate(getSpawnObject.GetObject());
-        go.transform.position = intersectionPoint + getSpawnObject.GetOffset();
-        occupiedPositionsList.Add(intersectionPoint);// spawned position to list
-        go.transform.rotation = getSpawnObject.GetRotationY();
 
+        GameObject go = Instantiate(getSpawnObject.GetObject());
+        go.transform.position = occupiedInfo.position + getSpawnObject.GetOffset();
+        go.transform.rotation = getSpawnObject.GetRotationY();
         go.transform.localScale = getSpawnObject.GetScaleXYZ();
         go.transform.parent = transform;
-
+        occupiedInfo.occupied = true;
         return go;
     }
-
 
     Vector3 GetRayDirection()
     {
@@ -108,12 +170,13 @@ public class SeedPlanter : MonoBehaviour
             case SpawnShape.Sphere:
                 return randomDirection;
             case SpawnShape.HemiSphere:
-                randomDirection.y = -Mathf.Abs(randomDirection.y);//force down
+                randomDirection.y = -Mathf.Abs(randomDirection.y); // Force downward
                 return randomDirection;
             default:
                 return randomDirection;
         }
     }
+
     Quaternion AllignToSurface(Vector3 normal, Vector3 upDirection)
     {
         return Quaternion.FromToRotation(upDirection, normal);
@@ -127,51 +190,37 @@ public class SeedPlanter : MonoBehaviour
         {
             DestroyImmediate(transform.GetChild(0).gameObject);
         }
-        occupiedPositionsList = new List<Vector3>();
+        occupiedPositionsList = new List<OccupiedPositionInfo>();
     }
 
-
-    //Only return true if there are no more than 1 colliders in the overlap sphere. The 1 threshold accounts for the terrain collider and the object itself.
-    bool ValidateSpawnLocation(Vector3 intersectPoint, SeedScriptableObject getSpawnObject, List<Vector3> occupied)
+    bool ValidateSpawnLocation(SeedScriptableObject getSpawnObject, OccupiedPositionInfo occupiedInfo)
     {
-        int neightbours = 0;
-        int i = 0;
-        while (i < occupied.Count)
+        int neighbours = 0;
+        for (int i = 0; i < occupiedPositionsList.Count; i++)
         {
-            float distance = Vector3.Distance(intersectPoint, occupied[i]);
-            if (distance < getSpawnObject.GetClosestAlowedNeightbour())
+            float distance = Vector3.Distance(occupiedInfo.position, occupiedPositionsList[i].position);
+            //if we are within distance and the position is occupied, count as neighbour.
+            if (distance < getSpawnObject.GetClosestAlowedNeightbour() && occupiedPositionsList[i].occupied)
             {
-                neightbours++;
-                if (showDebugGizmos) Debug.DrawLine(intersectPoint, occupied[i], Color.red, 3f);
+                neighbours++;
+                if (showDebugGizmos) Debug.DrawLine(occupiedInfo.position, occupiedPositionsList[i].position, Color.red, 3f);
             }
-            i++;
+
         }
 
-        if (neightbours > 1 + getSpawnObject.GetMaximumNeighbours())//always add 1 to take the initial hit collider or terrain into account.
+        if (neighbours > 1 + getSpawnObject.GetMaximumNeighbours() || occupiedInfo.angleNormal >= getSpawnObject.GetMaxAngle())
         {
-            //when the length is larger than the maximum allowed neightbbour we have an invalid spawn location.
-            return false;
+            return false; // Too many neighbors or to steep of an angle, invalid spawn
         }
-        else
-        {
-            //when the length is 1+maximum Neightbours or less we have a valid location.
-            return true;
-        }
+        return true; // Valid spawn location
     }
-
 
     void OnDrawGizmos()
     {
         if (!showDebugGizmos) return;
         Gizmos.color = new Color(0, 1, 0, 0.5f);
-
         Gizmos.DrawWireSphere(transform.position, shapeRadius);
-
-
     }
-
-
-
 }
 
 #endif
