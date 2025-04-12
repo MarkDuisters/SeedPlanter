@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using NUnit.Framework;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "SeedData", menuName = "ScriptableObjects/SeedObjectData", order = 1)]
@@ -13,8 +15,10 @@ class SeedScriptableObject : ScriptableObject
     [SerializeField] Vector3 offset = new Vector3(0, 0, 0);
     [SerializeField] bool randomRotationY = false;
     [SerializeField] float rotationRange = 360;
-    [SerializeField] bool randomScaleXYZ;
-    [SerializeField] Vector3 scaleMinimum, scaleMaximum = new Vector3(1f, 1f, 1f);
+    public enum RandomMode { None, uniform, RandomXYZ }
+    [SerializeField] RandomMode randomMode;
+    [ShowIfEnum("randomMode", RandomMode.RandomXYZ)][SerializeField] Vector3 scaleMinimum = new Vector3(1f, 1f, 1f), scaleMaximum = new Vector3(1f, 1f, 1f);
+    [ShowIfEnum("randomMode", RandomMode.uniform)][SerializeField] float UniformScaleMinimum = 1f, UniformScaleMaximum = 1f;
 
 
     [Header("Rules")]
@@ -29,13 +33,32 @@ class SeedScriptableObject : ScriptableObject
     public GameObject GetObject() => prefabObject;
     public Vector3 GetOffset() => offset;
     public bool EnableRandomRotationY() => randomRotationY;
-    public bool EnableRandomScale() => randomScaleXYZ;
+    public RandomMode EnableRandomScale() => randomMode;
 
     public float GetClosestAlowedNeightbour() => closestAlowedNeighbour;
     public int GetMaximumNeighbours() => maximumNeighbours;
     public Quaternion GetRotationY() => Quaternion.Euler(0, Random.Range(0, rotationRange), 0);
-    public Vector3 GetScaleXYZ() => new Vector3(Random.Range(scaleMinimum.x, scaleMaximum.x), Random.Range(scaleMinimum.y, scaleMaximum.y), Random.Range(scaleMinimum.z, scaleMaximum.z));
     public float GetMaxAngle() => maxAngle;
 
+    public Vector3 GetScaleXYZ()
+    {
+        Vector3 newSize = prefabObject.transform.localScale;
+        switch (randomMode)
+        {
+            case RandomMode.RandomXYZ:
+                newSize.x = Random.Range(scaleMinimum.x, scaleMaximum.x);
+                newSize.y = Random.Range(scaleMinimum.y, scaleMaximum.y);
+                newSize.z = Random.Range(scaleMinimum.z, scaleMaximum.z);
+                return newSize;
+            case RandomMode.uniform:
+                float rng = Random.Range(UniformScaleMinimum, UniformScaleMaximum);
+                newSize = new Vector3(rng, rng, rng);
+                return newSize;
 
+            case RandomMode.None:
+                return newSize;
+        }
+
+        return newSize;
+    }
 }

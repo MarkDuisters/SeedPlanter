@@ -192,7 +192,7 @@ public class SeedPlanter : MonoBehaviour
 
         GameObject go = Instantiate(getSpawnObject.GetObject());
         go.transform.position = occupiedInfo.position + getSpawnObject.GetOffset();
-        go.transform.rotation = getSpawnObject.GetRotationY();
+        if (getSpawnObject.EnableRandomRotationY()) go.transform.rotation = getSpawnObject.GetRotationY();
         go.transform.localScale = getSpawnObject.GetScaleXYZ();
         go.transform.parent = transform;
         occupiedInfo.occupied = true;
