@@ -17,8 +17,11 @@ public class SeedPlanter : MonoBehaviour
     [SerializeField] int objectCount = 1;
     [SerializeField] bool randomizePointInShape = false;
     [SerializeField] bool allignToSurface = false;
+    [Tooltip("Amount of times the system should try to fill unoccupied spaces.")]
+    [SerializeField] int passes = 1;
     [SerializeField] SeedScriptableObject[] spawnList;
     [SerializeField] List<OccupiedPositionInfo> occupiedPositionsList;
+    [SerializeField][ReadOnly] int remainingPositions;
     [Header("Raytrace settings")]
     [SerializeField] LayerMask layersToHit = -1;
     [Header("Raymarch settings")]
@@ -63,14 +66,41 @@ public class SeedPlanter : MonoBehaviour
 
     void PopulatePositionsWithObjects()
     {
-        foreach (OccupiedPositionInfo info in occupiedPositionsList)
+        for (int i = passes; i > 0; i--)
         {
-            GameObject getObject = ObjectFabricator(info);
-            if (getObject == null) continue;
+            foreach (OccupiedPositionInfo info in occupiedPositionsList)
+            {
+                GameObject getObject = ObjectFabricator(info);
+                if (getObject == null) continue;
+                //  if (getObject == null) PopulatePositionsWithObjects();//Use recursion untill we have a valid match.
 
-            getObject.transform.parent = transform;
-            getObject.transform.rotation = AllignToSurface(info.normal, getObject.transform.up);
+                getObject.transform.parent = transform;
+                if (allignToSurface) getObject.transform.rotation = AllignToSurface(info.normal, getObject.transform.up);
+                remainingPositions--;
+            }
         }
+    }
+
+    void CalculateSeedPositionsRayCasting()
+    {
+        Vector3 currentDirection = GetRayDirection().normalized;
+        Vector3 currentPosition = GetPositionInSphere();
+
+        for (int i = 0; i < maxSteps; i++)
+        {
+            // Check for collisions (raycasting)
+            if (Physics.Raycast(currentPosition, currentDirection, out RaycastHit hit, shapeRadius, layersToHit))
+            {
+                if (showDebugGizmos) Debug.DrawLine(currentPosition, hit.point, Color.green, 2f);  // Visualize the hit
+                OccupiedPositionInfo info = new OccupiedPositionInfo(hit.point, false, Mathf.Abs(Vector3.Angle(Vector3.up, hit.normal)), hit.normal);
+
+                occupiedPositionsList.Add(info);
+                break;  // Stop if a collision is hit
+            }
+
+            if (showDebugGizmos) Debug.DrawRay(currentPosition, currentDirection * shapeRadius, Color.red, 2f);
+        }
+        remainingPositions = occupiedPositionsList.Count;
     }
 
     void CalculateSeedPositionsRayMarching()
@@ -81,7 +111,7 @@ public class SeedPlanter : MonoBehaviour
         Vector3 windVelocity = wind * 0.01f;
 
         Vector3 gravityAcceleration = new Vector3(0, gravity, 0); // Direct gravity application
-        // Wind oscillation based on time in the editor
+                                                                  // Wind oscillation based on time in the editor
         Vector3 windForce = wind * 0.01f;
 
         Vector3 oldPosition = currentPosition;
@@ -107,27 +137,7 @@ public class SeedPlanter : MonoBehaviour
 
             oldPosition = currentPosition;
         }
-    }
-
-    void CalculateSeedPositionsRayCasting()
-    {
-        Vector3 currentDirection = GetRayDirection().normalized;
-        Vector3 currentPosition = GetPositionInSphere();
-
-        for (int i = 0; i < maxSteps; i++)
-        {
-            // Check for collisions (raycasting)
-            if (Physics.Raycast(currentPosition, currentDirection, out RaycastHit hit, shapeRadius, layersToHit))
-            {
-                if (showDebugGizmos) Debug.DrawLine(currentPosition, hit.point, Color.green, 2f);  // Visualize the hit
-                OccupiedPositionInfo info = new OccupiedPositionInfo(hit.point, false, Mathf.Abs(Vector3.Angle(Vector3.up, hit.normal)), hit.normal);
-
-                occupiedPositionsList.Add(info);
-                break;  // Stop if a collision is hit
-            }
-
-            if (showDebugGizmos) Debug.DrawRay(currentPosition, currentDirection * shapeRadius, Color.red, 2f);
-        }
+        remainingPositions = occupiedPositionsList.Count;
     }
 
     Vector3 RandomVector()
@@ -183,7 +193,8 @@ public class SeedPlanter : MonoBehaviour
     {
         if (occupiedInfo.occupied) return null;//This position already has an object.
 
-        SeedScriptableObject getSpawnObject = spawnList[Random.Range(0, spawnList.Length)]; // Get spawn object
+        SeedScriptableObject getSpawnObject = spawnList[Random.Range(0, spawnList.Length)];
+        //Is our location valid to spawn or do we already have a similar object?
         if (!ValidateSpawnLocation(getSpawnObject, occupiedInfo))
         {
             //   print("Invalid spawn location.");
@@ -191,6 +202,7 @@ public class SeedPlanter : MonoBehaviour
         }
 
         GameObject go = Instantiate(getSpawnObject.GetObject());
+        // occupiedInfo.SetObjectReference(go);//register the object in the current occupied info object.
         go.transform.position = occupiedInfo.position + getSpawnObject.GetOffset();
         if (getSpawnObject.EnableRandomRotationY()) go.transform.rotation = getSpawnObject.GetRotationY();
         go.transform.localScale = getSpawnObject.GetScaleXYZ();
@@ -249,7 +261,7 @@ public class SeedPlanter : MonoBehaviour
 
         }
 
-        if (neighbours > 1 + getSpawnObject.GetMaximumNeighbours() || occupiedInfo.angleNormal >= getSpawnObject.GetMaxAngle())
+        if (neighbours > getSpawnObject.GetMaximumNeighbours() || occupiedInfo.angleNormal >= getSpawnObject.GetMaxAngle())
         {
             return false; // Too many neighbors or to steep of an angle, invalid spawn
         }
