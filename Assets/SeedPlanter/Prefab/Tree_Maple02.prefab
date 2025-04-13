@@ -58,11 +58,36 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -4735300952323085200, guid: 4685cc49c8a125a4e87b77cf284e7d67,
+        type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: f576eae8c7da2ff4e86e1c30ab2fa15b, type: 2}
+    - target: {fileID: -2630041556901087285, guid: 4685cc49c8a125a4e87b77cf284e7d67,
+        type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: f576eae8c7da2ff4e86e1c30ab2fa15b, type: 2}
+    - target: {fileID: -931271339015823529, guid: 4685cc49c8a125a4e87b77cf284e7d67,
+        type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: f576eae8c7da2ff4e86e1c30ab2fa15b, type: 2}
     - target: {fileID: 919132149155446097, guid: 4685cc49c8a125a4e87b77cf284e7d67,
         type: 3}
       propertyPath: m_Name
       value: Tree_Maple02
       objectReference: {fileID: 0}
+    - target: {fileID: 3436402644726531572, guid: 4685cc49c8a125a4e87b77cf284e7d67,
+        type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: f576eae8c7da2ff4e86e1c30ab2fa15b, type: 2}
+    - target: {fileID: 6692388252384226000, guid: 4685cc49c8a125a4e87b77cf284e7d67,
+        type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: f576eae8c7da2ff4e86e1c30ab2fa15b, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

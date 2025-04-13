@@ -252,11 +252,7 @@ public class SeedPlanter : MonoBehaviour
             if (distance < getSpawnObject.GetClosestAlowedNeightbour() && occupiedPositionsList[i].occupied)
             {
                 neighbours++;
-                if (showDebugGizmos) Debug.DrawLine(occupiedInfo.position, occupiedPositionsList[i].position, Color.magenta, 2f);
-            }
-            else
-            {
-                if (showDebugGizmos) Debug.DrawLine(occupiedInfo.position, occupiedPositionsList[i].position, new Color(0, 0, 1, 0.1f), 2);
+                if (showDebugGizmos) Debug.DrawLine(occupiedInfo.position, occupiedPositionsList[i].position, Color.blue, 2f);
             }
 
         }
