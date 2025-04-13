@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using Random = UnityEngine.Random;
 using UnityEditor;
+using System;
 
 [ExecuteInEditMode]
 public class SeedPlanter : MonoBehaviour
@@ -35,8 +36,11 @@ public class SeedPlanter : MonoBehaviour
     [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] float turbulence = 0.1f; // Randomizer value
     [Tooltip("Adjust the turbulence strength of the wind.")]
     [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] float turbulenceStrength = 0.1f;
+
+    enum DebugInfo { None, All, Seeds, Neighbours }
     [Header("Debugging")]
-    public bool showDebugGizmos = false;
+    [SerializeField] DebugInfo debugInfo = DebugInfo.All;
+    public bool showRadiusGizmos = false;
 
     [Button]
     [ContextMenu("Plant Seeds")]
@@ -91,14 +95,14 @@ public class SeedPlanter : MonoBehaviour
             // Check for collisions (raycasting)
             if (Physics.Raycast(currentPosition, currentDirection, out RaycastHit hit, shapeRadius, layersToHit))
             {
-                if (showDebugGizmos) Debug.DrawLine(currentPosition, hit.point, Color.green, 2f);  // Visualize the hit
+                if (debugInfo == DebugInfo.Seeds || debugInfo == DebugInfo.All) Debug.DrawLine(currentPosition, hit.point, Color.green, 2f);  // Visualize the hit
                 OccupiedPositionInfo info = new OccupiedPositionInfo(hit.point, false, Mathf.Abs(Vector3.Angle(Vector3.up, hit.normal)), hit.normal);
 
                 occupiedPositionsList.Add(info);
                 break;  // Stop if a collision is hit
             }
 
-            if (showDebugGizmos) Debug.DrawRay(currentPosition, currentDirection * shapeRadius, Color.red, 2f);
+            if (debugInfo == DebugInfo.Seeds || debugInfo == DebugInfo.All) Debug.DrawRay(currentPosition, currentDirection * shapeRadius, Color.red, 2f);
         }
         remainingPositions = occupiedPositionsList.Count;
     }
@@ -126,14 +130,14 @@ public class SeedPlanter : MonoBehaviour
             // Check for collisions (raycasting)
             if (Physics.Raycast(oldPosition, currentPosition - oldPosition, out RaycastHit hit, stepDistance, layersToHit))
             {
-                if (showDebugGizmos) Debug.DrawLine(oldPosition, hit.point, Color.green, 2f);  // Visualize the hit
+                if (debugInfo == DebugInfo.Seeds || debugInfo == DebugInfo.All) Debug.DrawLine(oldPosition, hit.point, Color.green, 2f);  // Visualize the hit
                 OccupiedPositionInfo info = new OccupiedPositionInfo(hit.point, false, Mathf.Abs(Vector3.Angle(Vector3.up, hit.normal)), hit.normal);
 
                 occupiedPositionsList.Add(info);
                 break;  // Stop if a collision is hit
             }
 
-            if (showDebugGizmos) Debug.DrawLine(oldPosition, currentPosition, new Color((i + 0.01f) / maxSteps, 0f, 0f), 2f);
+            if (debugInfo == DebugInfo.Seeds || debugInfo == DebugInfo.All) Debug.DrawLine(oldPosition, currentPosition, new Color((i + 0.01f) / maxSteps, 0f, 0f), 2f);
 
             oldPosition = currentPosition;
         }
@@ -252,7 +256,7 @@ public class SeedPlanter : MonoBehaviour
             if (distance < getSpawnObject.GetClosestAlowedNeightbour() && occupiedPositionsList[i].occupied)
             {
                 neighbours++;
-                if (showDebugGizmos) Debug.DrawLine(occupiedInfo.position, occupiedPositionsList[i].position, Color.blue, 2f);
+                if (debugInfo == DebugInfo.Neighbours || debugInfo == DebugInfo.All) Debug.DrawLine(occupiedInfo.position, occupiedPositionsList[i].position, Color.blue, 2f);
             }
 
         }
@@ -266,7 +270,7 @@ public class SeedPlanter : MonoBehaviour
 
     void OnDrawGizmos()
     {
-        if (!showDebugGizmos) return;
+        if (!showRadiusGizmos) return;
         Gizmos.color = new Color(0, 1, 0, 0.5f);
         Gizmos.DrawWireSphere(transform.position, shapeRadius);
     }
