@@ -9,7 +9,7 @@ using System;
 [ExecuteInEditMode]
 public class SeedPlanter : MonoBehaviour
 {
-    enum WindNoiceType { Random, Perlin }
+    enum WindNoiseType { Random, Perlin }
     enum SpawnShape { Sphere, HemiSphere };
     enum RayMode { SingleRaycast, Raymarching }
     [Header("Spawner options")]
@@ -32,7 +32,7 @@ public class SeedPlanter : MonoBehaviour
     [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] int maxSteps = 100;
     [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] float gravity = -9.81f; // Adjusted gravity to Earth standard
     [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] Vector3 wind = Vector3.zero;
-    [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] WindNoiceType windTurbulence = WindNoiceType.Random;
+    [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] WindNoiseType windTurbulence = WindNoiseType.Random;
     [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] float turbulence = 0.1f; // Randomizer value
     [Tooltip("Adjust the turbulence strength of the wind.")]
     [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] float turbulenceStrength = 0.1f;
@@ -124,7 +124,7 @@ public class SeedPlanter : MonoBehaviour
         {
             // Apply gravity, wind, and turbulence to velocity
             windVelocity += windForce * stepDistance;
-            windVelocity += windTurbulence == WindNoiceType.Perlin ? PerlinNoiseWindForce() : RandomVector();
+            windVelocity += windTurbulence == WindNoiseType.Perlin ? PerlinNoiseWindForce() : RandomVector();
             velocity += gravityAcceleration * stepDistance / maxSteps + windVelocity * stepDistance / maxSteps;
             currentPosition += velocity * stepDistance;
             // Check for collisions (raycasting)

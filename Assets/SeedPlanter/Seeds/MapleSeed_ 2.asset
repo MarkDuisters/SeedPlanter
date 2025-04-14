@@ -19,9 +19,9 @@ MonoBehaviour:
   rotationRange: 360
   randomMode: 2
   scaleMinimum: {x: 1, y: 1, z: 1}
-  scaleMaximum: {x: 1.1, y: 1.1, z: 1.1}
+  scaleMaximum: {x: 6, y: 6, z: 6}
   UniformScaleMinimum: 1
   UniformScaleMaximum: 1
   closestAlowedNeighbour: 10
   maximumNeighbours: 20
-  maxAngle: 90
+  maxAngle: 180
