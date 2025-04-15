@@ -4,275 +4,285 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using Random = UnityEngine.Random;
 using UnityEditor;
-using System;
 
-[ExecuteInEditMode]
-public class SeedPlanter : MonoBehaviour
+namespace MD
 {
-    enum WindNoiseType { Random, Perlin }
-    enum SpawnShape { Sphere, HemiSphere };
-    enum RayMode { SingleRaycast, Raymarching }
-    [Header("Spawner options")]
-    [SerializeField] SpawnShape spawnShape = SpawnShape.Sphere;
-    [SerializeField] float shapeRadius = 1f;
-    [SerializeField] int objectCount = 1;
-    [SerializeField] bool randomizePointInShape = false;
-    [SerializeField] bool allignToSurface = false;
-    [Tooltip("Amount of times the system should try to fill unoccupied spaces.")]
-    [SerializeField] int passes = 1;
-    [SerializeField] SeedScriptableObject[] spawnList;
-    [SerializeField] List<OccupiedPositionInfo> occupiedPositionsList;
-    [SerializeField][ReadOnly] int remainingPositions;
-    [Header("Raytrace settings")]
-    [SerializeField] LayerMask layersToHit = -1;
-    [Header("Raymarch settings")]
-    [Tooltip("When enabled a per interval distance step will be taken. This gives the oppurtunity for a more organic position at the cost of more computation. When dissabled a single direction raycast will be used instead.")]
-    [SerializeField] RayMode raytraceMode = RayMode.SingleRaycast;
-    [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] float stepDistance = 0.1f;
-    [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] int maxSteps = 100;
-    [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] float gravity = -9.81f; // Adjusted gravity to Earth standard
-    [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] Vector3 wind = Vector3.zero;
-    [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] WindNoiseType windTurbulence = WindNoiseType.Random;
-    [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] float turbulence = 0.1f; // Randomizer value
-    [Tooltip("Adjust the turbulence strength of the wind.")]
-    [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] float turbulenceStrength = 0.1f;
-
-    enum DebugInfo { None, All, Seeds, Neighbours }
-    [Header("Debugging")]
-    [SerializeField] DebugInfo debugInfo = DebugInfo.All;
-    public bool showRadiusGizmos = false;
-
-    [Button]
-    [ContextMenu("Plant Seeds")]
-    void PlantSeeds()
+    [ExecuteInEditMode]
+    public class SeedPlanter : MonoBehaviour
     {
-        DestroyAllChildren();
+        enum SpawnShape { Sphere, HemiSphere };
+        [Header("Spawner options")]
+        [SerializeField] SpawnShape spawnShape = SpawnShape.Sphere;
+        [SerializeField] float shapeRadius = 1f;
+        [SerializeField] int maxPositions = 1;
+        [SerializeField] bool randomizePointInShape = false;
+        [SerializeField] bool allignToSurface = false;
+        [Tooltip("Amount of times the system should try to fill unoccupied spaces.")]
+        [SerializeField] int passes = 1;
+        [SerializeField] SeedScriptableObject[] spawnList;
+        [SerializeField] List<OccupiedPositionInfo> occupiedPositionsList;
+        [SerializeField][ReadOnly] int remainingPositions;
+        [Header("Raytrace settings")]
+        [SerializeField] LayerMask layersToHit = -1;
+        enum RayMode { SingleRaycast, Raymarching }
+        [Header("Raymarch settings")]
+        [Tooltip("When enabled a per interval distance step will be taken. This gives the oppurtunity for a more organic position at the cost of more computation. When dissabled a single direction raycast will be used instead.")]
+        [SerializeField] RayMode raytraceMode = RayMode.SingleRaycast;
+        [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] float stepDistance = 0.1f;
+        [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] int maxSteps = 100;
+        [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] float gravity = -9.81f; // Adjusted gravity to Earth standard
+        [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] Vector3 wind = Vector3.zero;
+        enum WindNoiseType { Random, Perlin }
+        [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] WindNoiseType windTurbulence = WindNoiseType.Random;
+        [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] float turbulence = 0.1f; // Randomizer value
+        [Tooltip("Adjust the turbulence strength of the wind.")]
+        [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] float turbulenceStrength = 0.1f;
 
-        GeneratePositions();
-        PopulatePositionsWithObjects();
-    }
+        enum DebugInfo { None, All, Seeds, Neighbours }
+        [Header("Debugging")]
+        [SerializeField] DebugInfo debugInfo = DebugInfo.All;
+        public bool showRadiusGizmos = false;
 
-    void GeneratePositions()
-    {
-        for (int i = 0; i < objectCount; i++)
+
+        [Button]
+        [ContextMenu("Plant Seeds")]
+        void PlantSeeds()
         {
-            switch (raytraceMode)
+            DestroyAllChildren();
+
+            GeneratePositions();
+            PopulatePositionsWithObjects();
+        }
+
+        void GeneratePositions()
+        {
+            for (int i = 0; i < maxPositions; i++)
             {
-                case RayMode.SingleRaycast:
-                    CalculateSeedPositionsRayCasting();
-                    break;
-                case RayMode.Raymarching:
-                    CalculateSeedPositionsRayMarching();
-                    break;
+                switch (raytraceMode)
+                {
+                    case RayMode.SingleRaycast:
+                        CalculateSeedPositionsRayCasting();
+                        break;
+                    case RayMode.Raymarching:
+                        CalculateSeedPositionsRayMarching();
+                        break;
+                }
             }
         }
-    }
 
-    void PopulatePositionsWithObjects()
-    {
-        for (int i = passes; i > 0; i--)
+        void PopulatePositionsWithObjects()
         {
-            foreach (OccupiedPositionInfo info in occupiedPositionsList)
+            for (int i = passes; i > 0; i--)
             {
-                GameObject getObject = ObjectFabricator(info);
-                if (getObject == null) continue;
-                //  if (getObject == null) PopulatePositionsWithObjects();//Use recursion untill we have a valid match.
+                foreach (OccupiedPositionInfo info in occupiedPositionsList)
+                {
+                    GameObject getObject = ObjectFabricator(info);
+                    if (getObject == null) continue;
+                    //  if (getObject == null) PopulatePositionsWithObjects();//Use recursion untill we have a valid match.
 
-                getObject.transform.parent = transform;
-                if (allignToSurface) getObject.transform.rotation = AllignToSurface(info.normal, getObject.transform.up);
-                remainingPositions--;
+                    getObject.transform.parent = transform;
+                    if (allignToSurface) getObject.transform.rotation = AllignToSurface(info.normal, getObject.transform.up);
+                    remainingPositions--;
+                }
             }
         }
-    }
 
-    void CalculateSeedPositionsRayCasting()
-    {
-        Vector3 currentDirection = GetRayDirection().normalized;
-        Vector3 currentPosition = GetPositionInSphere();
-
-        for (int i = 0; i < maxSteps; i++)
+        void CalculateSeedPositionsRayCasting()
         {
-            // Check for collisions (raycasting)
-            if (Physics.Raycast(currentPosition, currentDirection, out RaycastHit hit, shapeRadius, layersToHit))
-            {
-                if (debugInfo == DebugInfo.Seeds || debugInfo == DebugInfo.All) Debug.DrawLine(currentPosition, hit.point, Color.green, 2f);  // Visualize the hit
-                OccupiedPositionInfo info = new OccupiedPositionInfo(hit.point, false, Mathf.Abs(Vector3.Angle(Vector3.up, hit.normal)), hit.normal);
+            Vector3 currentDirection = GetRayDirection().normalized;
+            Vector3 currentPosition = GetPositionInSphere();
 
-                occupiedPositionsList.Add(info);
-                break;  // Stop if a collision is hit
+            for (int i = 0; i < maxSteps; i++)
+            {
+                // Check for collisions (raycasting)
+                if (Physics.Raycast(currentPosition, currentDirection, out RaycastHit hit, shapeRadius, layersToHit))
+                {
+                    if (debugInfo == DebugInfo.Seeds || debugInfo == DebugInfo.All) Debug.DrawLine(currentPosition, hit.point, Color.green, 2f);  // Visualize the hit
+                    OccupiedPositionInfo info = new OccupiedPositionInfo(hit.point, false, Mathf.Abs(Vector3.Angle(Vector3.up, hit.normal)), hit.normal);
+
+                    occupiedPositionsList.Add(info);
+                    break;  // Stop if a collision is hit
+                }
+
+                if (debugInfo == DebugInfo.Seeds || debugInfo == DebugInfo.All) Debug.DrawRay(currentPosition, currentDirection * shapeRadius, Color.red, 2f);
+            }
+            remainingPositions = occupiedPositionsList.Count;
+        }
+
+        void CalculateSeedPositionsRayMarching()
+        {
+            Vector3 currentDirection = GetRayDirection().normalized;
+            Vector3 currentPosition = GetPositionInSphere();
+            Vector3 velocity = currentDirection * stepDistance;
+            Vector3 windVelocity = wind * 0.01f;
+
+            Vector3 gravityAcceleration = new Vector3(0, gravity, 0); // Direct gravity application
+                                                                      // Wind oscillation based on time in the editor
+            Vector3 windForce = wind * 0.01f;
+
+            Vector3 oldPosition = currentPosition;
+            bool hitSomething = false;
+            int currentStep = 0;
+
+            Perlin noise = new Perlin();
+            //    for (int i = 0; i < maxSteps; i++)
+            while (!hitSomething && currentStep < maxSteps)
+            {
+                int noiseSeed = Random.Range(0, maxPositions);
+                // Apply gravity, wind, and turbulence to velocity
+                windVelocity += windForce * stepDistance;
+                windVelocity += windTurbulence == WindNoiseType.Perlin ? PerlinNoiseWindForce(noise, noiseSeed, currentStep) : RandomVector();
+                velocity += gravityAcceleration * stepDistance / maxSteps + windVelocity * stepDistance / maxSteps;
+                currentPosition += velocity * stepDistance;
+                Vector3 segment = currentPosition - oldPosition;
+                float segmentLength = segment.magnitude;
+                // Check for collisions (raycasting)
+                if (Physics.Raycast(oldPosition, segment.normalized, out RaycastHit hit, segmentLength, layersToHit))
+                {
+                    if (debugInfo == DebugInfo.Seeds || debugInfo == DebugInfo.All) Debug.DrawLine(oldPosition, hit.point, Color.green, 2f);  // Visualize the hit
+                    OccupiedPositionInfo info = new OccupiedPositionInfo(hit.point, false, Mathf.Abs(Vector3.Angle(Vector3.up, hit.normal)), hit.normal);
+
+                    occupiedPositionsList.Add(info);
+                    hitSomething = true;
+                }
+
+                if (debugInfo == DebugInfo.Seeds || debugInfo == DebugInfo.All) Debug.DrawLine(oldPosition, currentPosition, Color.red, 2f);
+
+                oldPosition = currentPosition;
+                currentStep++;
+            }
+            remainingPositions = occupiedPositionsList.Count;
+        }
+
+        Vector3 RandomVector()
+        {
+            float x, y, z;
+            x = Random.Range(-turbulence, turbulence);
+            y = Random.Range(-turbulence, turbulence);
+            z = Random.Range(-turbulence, turbulence);
+            return new Vector3(x, y, z) * turbulenceStrength;
+        }
+
+
+        Vector3 PerlinNoiseWindForce(Perlin noise, int seed, float tick)
+        {
+            float t = seed + tick * (1f / (turbulence + 0.001f)); // prevents div by zero and keeps smooth
+            // Use scaled and offset coordinates to ensure variation between axes
+            double x = noise.perlin(t + 100.123, t + 200.456, t + 300.789);
+            double y = noise.perlin(t + 400.123, t + 500.456, t + 600.789);
+            double z = noise.perlin(t + 700.123, t + 800.456, t + 900.789);
+            
+            float lerpedX = Mathf.Lerp(-1f, 1f, (float)x);
+            float lerpedY = Mathf.Lerp(-1f, 1f, (float)y);
+            float lerpedZ = Mathf.Lerp(-1f, 1f, (float)z);
+            Vector3 wind = new Vector3(lerpedX, lerpedY, lerpedZ) * turbulenceStrength;
+            return wind;
+        }
+
+
+        Vector3 GetPositionInSphere()
+        {
+            Vector3 position = transform.position;
+            if (randomizePointInShape)
+            {
+                position = Random.insideUnitSphere * shapeRadius;
+
+                switch (spawnShape)
+                {
+                    case SpawnShape.Sphere:
+                        return transform.position + position;
+                    case SpawnShape.HemiSphere:
+                        position = transform.position + new Vector3(position.x, -Mathf.Abs(position.y), position.z); // Force downward
+                        return position;
+                    default:
+                        return position;
+                }
+            }
+            return position;
+        }
+
+        GameObject ObjectFabricator(OccupiedPositionInfo occupiedInfo)
+        {
+            if (occupiedInfo.occupied) return null;//This position already has an object.
+
+            SeedScriptableObject getSpawnObject = spawnList[Random.Range(0, spawnList.Length)];
+            //Is our location valid to spawn or do we already have a similar object?
+            if (!ValidateSpawnLocation(getSpawnObject, occupiedInfo))
+            {
+                //   print("Invalid spawn location.");
+                return null;
             }
 
-            if (debugInfo == DebugInfo.Seeds || debugInfo == DebugInfo.All) Debug.DrawRay(currentPosition, currentDirection * shapeRadius, Color.red, 2f);
+            GameObject go = (GameObject)PrefabUtility.InstantiatePrefab(getSpawnObject.GetObject());
+            // occupiedInfo.SetObjectReference(go);//register the object in the current occupied info object.
+            go.transform.position = occupiedInfo.position + getSpawnObject.GetOffset();
+            if (getSpawnObject.EnableRandomRotationY()) go.transform.rotation = getSpawnObject.GetRotationY();
+            go.transform.localScale = getSpawnObject.GetScaleXYZ();
+            go.transform.parent = transform;
+            occupiedInfo.occupied = true;
+            return go;
         }
-        remainingPositions = occupiedPositionsList.Count;
-    }
 
-    void CalculateSeedPositionsRayMarching()
-    {
-        Vector3 currentDirection = GetRayDirection().normalized;
-        Vector3 currentPosition = GetPositionInSphere();
-        Vector3 velocity = currentDirection * stepDistance;
-        Vector3 windVelocity = wind * 0.01f;
-
-        Vector3 gravityAcceleration = new Vector3(0, gravity, 0); // Direct gravity application
-                                                                  // Wind oscillation based on time in the editor
-        Vector3 windForce = wind * 0.01f;
-
-        Vector3 oldPosition = currentPosition;
-
-        for (int i = 0; i < maxSteps; i++)
+        Vector3 GetRayDirection()
         {
-            // Apply gravity, wind, and turbulence to velocity
-            windVelocity += windForce * stepDistance;
-            windVelocity += windTurbulence == WindNoiseType.Perlin ? PerlinNoiseWindForce() : RandomVector();
-            velocity += gravityAcceleration * stepDistance / maxSteps + windVelocity * stepDistance / maxSteps;
-            currentPosition += velocity * stepDistance;
-            // Check for collisions (raycasting)
-            if (Physics.Raycast(oldPosition, currentPosition - oldPosition, out RaycastHit hit, stepDistance, layersToHit))
-            {
-                if (debugInfo == DebugInfo.Seeds || debugInfo == DebugInfo.All) Debug.DrawLine(oldPosition, hit.point, Color.green, 2f);  // Visualize the hit
-                OccupiedPositionInfo info = new OccupiedPositionInfo(hit.point, false, Mathf.Abs(Vector3.Angle(Vector3.up, hit.normal)), hit.normal);
-
-                occupiedPositionsList.Add(info);
-                break;  // Stop if a collision is hit
-            }
-
-            if (debugInfo == DebugInfo.Seeds || debugInfo == DebugInfo.All) Debug.DrawLine(oldPosition, currentPosition, new Color((i + 0.01f) / maxSteps, 0f, 0f), 2f);
-
-            oldPosition = currentPosition;
-        }
-        remainingPositions = occupiedPositionsList.Count;
-    }
-
-    Vector3 RandomVector()
-    {
-        float x, y, z;
-        x = Random.Range(-turbulence, turbulence);
-        y = Random.Range(-turbulence, turbulence);
-        z = Random.Range(-turbulence, turbulence);
-        return new Vector3(x, y, z).normalized * turbulenceStrength;
-    }
-
-    Vector3 PerlinNoiseWindForce()
-    {
-        // Use Perlin noise to create smooth, oscillating turbulence.
-        float timeFactor = (float)EditorApplication.timeSinceStartup;
-
-        // Use Perlin noise to create oscillating forces over time
-        float xForce = Mathf.PerlinNoise(timeFactor * turbulence, 0); // X-axis turbulence
-        float yForce = Mathf.PerlinNoise(timeFactor * turbulence, timeFactor * turbulence);
-        float zForce = Mathf.PerlinNoise(0, timeFactor * turbulence); // Z-axis turbulence
-
-        float lerpedX = Mathf.Lerp(-1f, 1f, xForce);
-        float lerpedY = Mathf.Lerp(-1f, 1f, yForce);
-        float lerpedZ = Mathf.Lerp(-1f, 1f, zForce);
-
-
-        Vector3 finalPerlin = new Vector3(lerpedX, lerpedY, lerpedZ);
-        // Return the wind force, scaled by turbulence strength
-        return finalPerlin.normalized * turbulenceStrength;
-    }
-    Vector3 GetPositionInSphere()
-    {
-        Vector3 position = transform.position;
-        if (randomizePointInShape)
-        {
-            position = Random.insideUnitSphere * shapeRadius;
-
+            Vector3 randomDirection = transform.InverseTransformDirection(Random.onUnitSphere);
             switch (spawnShape)
             {
                 case SpawnShape.Sphere:
-                    return transform.position + position;
+                    return randomDirection;
                 case SpawnShape.HemiSphere:
-                    position = transform.position + new Vector3(position.x, -Mathf.Abs(position.y), position.z); // Force downward
-                    return position;
+                    randomDirection.y = -Mathf.Abs(randomDirection.y); // Force downward
+                    return randomDirection;
                 default:
-                    return position;
+                    return randomDirection;
             }
         }
-        return position;
-    }
 
-    GameObject ObjectFabricator(OccupiedPositionInfo occupiedInfo)
-    {
-        if (occupiedInfo.occupied) return null;//This position already has an object.
-
-        SeedScriptableObject getSpawnObject = spawnList[Random.Range(0, spawnList.Length)];
-        //Is our location valid to spawn or do we already have a similar object?
-        if (!ValidateSpawnLocation(getSpawnObject, occupiedInfo))
+        Quaternion AllignToSurface(Vector3 normal, Vector3 upDirection)
         {
-            //   print("Invalid spawn location.");
-            return null;
+            return Quaternion.FromToRotation(upDirection, normal);
         }
 
-        GameObject go = Instantiate(getSpawnObject.GetObject());
-        // occupiedInfo.SetObjectReference(go);//register the object in the current occupied info object.
-        go.transform.position = occupiedInfo.position + getSpawnObject.GetOffset();
-        if (getSpawnObject.EnableRandomRotationY()) go.transform.rotation = getSpawnObject.GetRotationY();
-        go.transform.localScale = getSpawnObject.GetScaleXYZ();
-        go.transform.parent = transform;
-        occupiedInfo.occupied = true;
-        return go;
-    }
-
-    Vector3 GetRayDirection()
-    {
-        Vector3 randomDirection = transform.InverseTransformDirection(Random.onUnitSphere);
-        switch (spawnShape)
+        [Button]
+        [ContextMenu("Destroy All Children")]
+        void DestroyAllChildren()
         {
-            case SpawnShape.Sphere:
-                return randomDirection;
-            case SpawnShape.HemiSphere:
-                randomDirection.y = -Mathf.Abs(randomDirection.y); // Force downward
-                return randomDirection;
-            default:
-                return randomDirection;
-        }
-    }
-
-    Quaternion AllignToSurface(Vector3 normal, Vector3 upDirection)
-    {
-        return Quaternion.FromToRotation(upDirection, normal);
-    }
-
-    [Button]
-    [ContextMenu("Destroy All Children")]
-    void DestroyAllChildren()
-    {
-        while (transform.childCount > 0)
-        {
-            DestroyImmediate(transform.GetChild(0).gameObject);
-        }
-        occupiedPositionsList = new List<OccupiedPositionInfo>();
-    }
-
-    bool ValidateSpawnLocation(SeedScriptableObject getSpawnObject, OccupiedPositionInfo occupiedInfo)
-    {
-        int neighbours = 0;
-        for (int i = 0; i < occupiedPositionsList.Count; i++)
-        {
-            float distance = Vector3.Distance(occupiedInfo.position, occupiedPositionsList[i].position);
-            //if we are within distance and the position is occupied, count as neighbour.
-            if (distance < getSpawnObject.GetClosestAlowedNeightbour() && occupiedPositionsList[i].occupied)
+            while (transform.childCount > 0)
             {
-                neighbours++;
-                if (debugInfo == DebugInfo.Neighbours || debugInfo == DebugInfo.All) Debug.DrawLine(occupiedInfo.position, occupiedPositionsList[i].position, Color.blue, 2f);
+                DestroyImmediate(transform.GetChild(0).gameObject);
+            }
+            occupiedPositionsList = new List<OccupiedPositionInfo>();
+        }
+
+        bool ValidateSpawnLocation(SeedScriptableObject getSpawnObject, OccupiedPositionInfo occupiedInfo)
+        {
+            int neighbours = 0;
+            for (int i = 0; i < occupiedPositionsList.Count; i++)
+            {
+                float distance = Vector3.Distance(occupiedInfo.position, occupiedPositionsList[i].position);
+                //if we are within distance and the position is occupied, count as neighbour.
+                if (distance < getSpawnObject.GetClosestAlowedNeightbour() && occupiedPositionsList[i].occupied)
+                {
+                    neighbours++;
+                    if (debugInfo == DebugInfo.Neighbours || debugInfo == DebugInfo.All) Debug.DrawLine(occupiedInfo.position, occupiedPositionsList[i].position, Color.blue, 2f);
+                }
+
             }
 
+            if (neighbours > getSpawnObject.GetMaximumNeighbours() || occupiedInfo.angleNormal >= getSpawnObject.GetMaxAngle())
+            {
+                return false; // Too many neighbors or to steep of an angle, invalid spawn
+            }
+            return true; // Valid spawn location
         }
 
-        if (neighbours > getSpawnObject.GetMaximumNeighbours() || occupiedInfo.angleNormal >= getSpawnObject.GetMaxAngle())
+        void OnDrawGizmos()
         {
-            return false; // Too many neighbors or to steep of an angle, invalid spawn
+            if (!showRadiusGizmos) return;
+            Gizmos.color = new Color(0, 1, 0, 0.5f);
+            Gizmos.DrawWireSphere(transform.position, shapeRadius);
         }
-        return true; // Valid spawn location
     }
 
-    void OnDrawGizmos()
-    {
-        if (!showRadiusGizmos) return;
-        Gizmos.color = new Color(0, 1, 0, 0.5f);
-        Gizmos.DrawWireSphere(transform.position, shapeRadius);
-    }
 }
 #endif

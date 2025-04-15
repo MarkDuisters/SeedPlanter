@@ -2,9 +2,6 @@
 using UnityEngine;
 #endif
 
-
-
-
 public class ShowIfEnumAttribute : PropertyAttribute
 {
     public string EnumFieldName;

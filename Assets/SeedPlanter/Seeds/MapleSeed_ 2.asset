@@ -17,11 +17,11 @@ MonoBehaviour:
   offset: {x: 0, y: 0, z: 0}
   randomRotationY: 1
   rotationRange: 360
-  randomMode: 2
+  randomMode: 1
   scaleMinimum: {x: 1, y: 1, z: 1}
   scaleMaximum: {x: 6, y: 6, z: 6}
   UniformScaleMinimum: 1
-  UniformScaleMaximum: 1
+  UniformScaleMaximum: 3
   closestAlowedNeighbour: 10
-  maximumNeighbours: 20
+  maximumNeighbours: 1
   maxAngle: 180
