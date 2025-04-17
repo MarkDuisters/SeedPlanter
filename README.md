@@ -34,6 +34,6 @@ Have fun! 🌲🌿🏡
 
 ![](https://github.com/MarkDuisters/SeedPlanter/blob/main/images/plant%20trees.gif)
 
-![](https://github.com/MarkDuisters/SeedPlanter/blob/main/images/plant%trees2.gif?raw=true)
+![](https://github.com/MarkDuisters/SeedPlanter/blob/main/images/plant-trees2.gif?raw=true)
 
-![](https://github.com/MarkDuisters/SeedPlanter/blob/main/images/plant%trees3.gif?raw=true)
+![](https://github.com/MarkDuisters/SeedPlanter/blob/main/images/plant-trees3.gif?raw=true)
