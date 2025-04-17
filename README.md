@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is an editor script designed for Unity that allows you to populate a surface with objects easily. Unlike traditional terrain tools, this script does **not** create terrain instances but instead spawns **GameObjects** in your scene.
+This is an editor script designed for Unity that allows you to populate a surface with objects easily. Unlike traditional terrain tools, this script does **not (yet)** create terrain instances but instead spawns **GameObjects** in your scene.
 
 ## Features
 
