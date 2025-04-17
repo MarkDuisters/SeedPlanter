@@ -7,27 +7,22 @@ This is an editor script designed for Unity that allows you to populate a surfac
 ## Features
 
 - **Easy Setup**: Simply create a `SeedObjectData` file via `Create -> ScriptableObjects`.
-- **Prefab-Based**: Assign any prefab you want and tweak its settings.
+- **Prefab-Based**: Assign any prefab you want to a seed and tweak its rules.
 - **Flexible Usage**: While intended for trees and foliage, it works with **any** prefab.
-- **Customizable Spawning**: The populator/planter takes `SeedObjectData` settings into account when distributing objects.
+- **Customizable Spawning**: The populator/planter takes `SeedObjectData` rules into account when distributing objects.
 
 ## Installation and Usage
 
-1. Download or clone this repository.
+1. Download/clone this repository or download the package on the release page.
 2. Import the SeedPlanter folder into your Unity project.
 3. Create a `SeedObjectData` file (`Create -> ScriptableObjects`).
-4. Assign your desired prefab and adjust settings.
+4. Assign your desired prefab and adjust rules.
 5. Use the populator to generate objects in your scene.
 
-## Notes
-
-- This tool **does not modify terrain data**, it only spawns GameObjects.
-- Works best for **natural elements** like trees, grass, and rocks but supports any prefab.
-- Adjust settings carefully to optimize performance, especially for large object counts. Use mesh instancing of materials where applicable.
 
 ## License
 
-This project is open-source. Feel free to modify and use it in your projects.
+This project is open-source. Feel free to modify and use it in your projects. If possible please credit this page.
 
 ---
 
