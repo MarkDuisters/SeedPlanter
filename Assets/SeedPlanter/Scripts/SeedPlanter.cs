@@ -26,10 +26,9 @@ namespace MD
         [SerializeField] LayerMask layersToHit = -1;
         enum RayMode { SingleRaycast, Raymarching }
         [Header("Raymarch settings")]
-        [Tooltip("When enabled a per interval distance step will be taken. This gives the oppurtunity for a more organic position at the cost of more computation. When dissabled a single direction raycast will be used instead.")]
+        [Tooltip("Raycast: Linear, fast and cheap. Raymarching:Flexible, expensive, slower with smaller steps. When enabled a per interval distance step will be taken. This gives the oppurtunity for a more organic position at the cost of more computation. When dissabled a single direction raycast will be used instead.")]
         [SerializeField] RayMode raytraceMode = RayMode.SingleRaycast;
         [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] float stepDistance = 0.1f;
-        [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] int maxSteps = 100;
         [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] float gravity = -9.81f; // Adjusted gravity to Earth standard
         [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] Vector3 wind = Vector3.zero;
         enum WindNoiseType { Random, Perlin }
@@ -92,20 +91,20 @@ namespace MD
             Vector3 currentDirection = GetRayDirection().normalized;
             Vector3 currentPosition = GetPositionInSphere();
 
-            for (int i = 0; i < maxSteps; i++)
+            //  for (int i = 0; i < maxPositions; i++)
+            //  {
+            // Check for collisions (raycasting)
+            if (Physics.Raycast(currentPosition, currentDirection, out RaycastHit hit, shapeRadius, layersToHit))
             {
-                // Check for collisions (raycasting)
-                if (Physics.Raycast(currentPosition, currentDirection, out RaycastHit hit, shapeRadius, layersToHit))
-                {
-                    if (debugInfo == DebugInfo.Seeds || debugInfo == DebugInfo.All) Debug.DrawLine(currentPosition, hit.point, Color.green, 2f);  // Visualize the hit
-                    OccupiedPositionInfo info = new OccupiedPositionInfo(hit.point, false, Mathf.Abs(Vector3.Angle(Vector3.up, hit.normal)), hit.normal);
+                if (debugInfo == DebugInfo.Seeds || debugInfo == DebugInfo.All) Debug.DrawLine(currentPosition, hit.point, Color.green, 2f);  // Visualize the hit
+                OccupiedPositionInfo info = new OccupiedPositionInfo(hit.point, false, Mathf.Abs(Vector3.Angle(Vector3.up, hit.normal)), hit.normal);
 
-                    occupiedPositionsList.Add(info);
-                    break;  // Stop if a collision is hit
-                }
-
-                if (debugInfo == DebugInfo.Seeds || debugInfo == DebugInfo.All) Debug.DrawRay(currentPosition, currentDirection * shapeRadius, Color.red, 2f);
+                occupiedPositionsList.Add(info);
+                // break;  // Stop if a collision is hit
             }
+
+            if (debugInfo == DebugInfo.Seeds || debugInfo == DebugInfo.All) Debug.DrawRay(currentPosition, currentDirection * shapeRadius, Color.red, 2f);
+            //  }
             remainingPositions = occupiedPositionsList.Count;
         }
 
@@ -125,14 +124,17 @@ namespace MD
             int currentStep = 0;
 
             Perlin noise = new Perlin();
-            //    for (int i = 0; i < maxSteps; i++)
-            while (!hitSomething && currentStep < maxSteps)
+
+            int _maxSteps = (int)(shapeRadius / stepDistance);
+            print(_maxSteps);
+            while (!hitSomething && currentStep < _maxSteps)
             {
                 int noiseSeed = Random.Range(0, maxPositions);
                 // Apply gravity, wind, and turbulence to velocity
                 windVelocity += windForce * stepDistance;
-                windVelocity += windTurbulence == WindNoiseType.Perlin ? PerlinNoiseWindForce(noise, noiseSeed, currentStep) : RandomVector();
-                velocity += gravityAcceleration * stepDistance / maxSteps + windVelocity * stepDistance / maxSteps;
+                Vector3 noisePattern = windTurbulence == WindNoiseType.Perlin ? PerlinNoiseWindForce(noise, noiseSeed, currentStep) : RandomVector();
+                windVelocity += noisePattern;
+                velocity += (gravityAcceleration + noisePattern) * stepDistance / _maxSteps + windVelocity * stepDistance / _maxSteps;
                 currentPosition += velocity * stepDistance;
                 Vector3 segment = currentPosition - oldPosition;
                 float segmentLength = segment.magnitude;
@@ -171,7 +173,7 @@ namespace MD
             double x = noise.perlin(t + 100.123, t + 200.456, t + 300.789);
             double y = noise.perlin(t + 400.123, t + 500.456, t + 600.789);
             double z = noise.perlin(t + 700.123, t + 800.456, t + 900.789);
-            
+
             float lerpedX = Mathf.Lerp(-1f, 1f, (float)x);
             float lerpedY = Mathf.Lerp(-1f, 1f, (float)y);
             float lerpedZ = Mathf.Lerp(-1f, 1f, (float)z);

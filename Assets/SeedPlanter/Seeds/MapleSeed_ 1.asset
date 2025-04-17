@@ -24,4 +24,4 @@ MonoBehaviour:
   UniformScaleMaximum: 0.5
   closestAlowedNeighbour: 1
   maximumNeighbours: 10
-  maxAngle: 180
+  maxAngle: 90
