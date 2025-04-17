@@ -17,6 +17,8 @@ namespace MD
         [SerializeField] int maxPositions = 1;
         [SerializeField] bool randomizePointInShape = false;
         [SerializeField] bool allignToSurface = false;
+        [Tooltip("When enabled, instead of randomly spawning an object, collect a list and spawn an object based on a seed's material list.")]
+        [SerializeField] bool useMatchingMaterials = false;
         [Tooltip("Amount of times the system should try to fill unoccupied spaces.")]
         [SerializeField] int passes = 1;
         [SerializeField] SeedScriptableObject[] spawnList;
@@ -97,7 +99,10 @@ namespace MD
             if (Physics.Raycast(currentPosition, currentDirection, out RaycastHit hit, shapeRadius, layersToHit))
             {
                 if (debugInfo == DebugInfo.Seeds || debugInfo == DebugInfo.All) Debug.DrawLine(currentPosition, hit.point, Color.green, 2f);  // Visualize the hit
-                OccupiedPositionInfo info = new OccupiedPositionInfo(hit.point, false, Mathf.Abs(Vector3.Angle(Vector3.up, hit.normal)), hit.normal);
+                Material getMaterial = null;
+                if (!hit.collider.GetComponent<Terrain>()) getMaterial = hit.collider.GetComponent<Renderer>().sharedMaterial;
+                float angle = Mathf.Abs(Vector3.Angle(Vector3.up, hit.normal));
+                OccupiedPositionInfo info = new OccupiedPositionInfo(hit.point, false, angle, hit.normal, getMaterial);
 
                 occupiedPositionsList.Add(info);
                 // break;  // Stop if a collision is hit
@@ -138,11 +143,15 @@ namespace MD
                 currentPosition += velocity * stepDistance;
                 Vector3 segment = currentPosition - oldPosition;
                 float segmentLength = segment.magnitude;
+
                 // Check for collisions (raycasting)
                 if (Physics.Raycast(oldPosition, segment.normalized, out RaycastHit hit, segmentLength, layersToHit))
                 {
                     if (debugInfo == DebugInfo.Seeds || debugInfo == DebugInfo.All) Debug.DrawLine(oldPosition, hit.point, Color.green, 2f);  // Visualize the hit
-                    OccupiedPositionInfo info = new OccupiedPositionInfo(hit.point, false, Mathf.Abs(Vector3.Angle(Vector3.up, hit.normal)), hit.normal);
+                    Material getMaterial = null;
+                    if (!hit.collider.GetComponent<Terrain>()) getMaterial = hit.collider.GetComponent<Renderer>().sharedMaterial;
+                    float angle = Mathf.Abs(Vector3.Angle(Vector3.up, hit.normal));
+                    OccupiedPositionInfo info = new OccupiedPositionInfo(hit.point, false, angle, hit.normal, getMaterial);
 
                     occupiedPositionsList.Add(info);
                     hitSomething = true;
@@ -206,10 +215,19 @@ namespace MD
         GameObject ObjectFabricator(OccupiedPositionInfo occupiedInfo)
         {
             if (occupiedInfo.occupied) return null;//This position already has an object.
-
-            SeedScriptableObject getSpawnObject = spawnList[Random.Range(0, spawnList.Length)];
+            SeedScriptableObject getSpawnObject;
+            //Place a random object or search based on a matching material in the seed.
+            if (!useMatchingMaterials)
+            {
+                getSpawnObject = spawnList[Random.Range(0, spawnList.Length)];
+            }
+            else
+            {
+                getSpawnObject = FindObjectWithMatchingMaterials(occupiedInfo.material);
+            }
+            if (getSpawnObject == null) return null;
             //Is our location valid to spawn or do we already have a similar object?
-            if (!ValidateSpawnLocation(getSpawnObject, occupiedInfo))
+            if (!ValidateNeighbours(getSpawnObject, occupiedInfo))
             {
                 //   print("Invalid spawn location.");
                 return null;
@@ -256,7 +274,7 @@ namespace MD
             occupiedPositionsList = new List<OccupiedPositionInfo>();
         }
 
-        bool ValidateSpawnLocation(SeedScriptableObject getSpawnObject, OccupiedPositionInfo occupiedInfo)
+        bool ValidateNeighbours(SeedScriptableObject getSpawnObject, OccupiedPositionInfo occupiedInfo)
         {
             int neighbours = 0;
             for (int i = 0; i < occupiedPositionsList.Count; i++)
@@ -284,7 +302,36 @@ namespace MD
             Gizmos.color = new Color(0, 1, 0, 0.5f);
             Gizmos.DrawWireSphere(transform.position, shapeRadius);
         }
-    }
 
+        SeedScriptableObject FindObjectWithMatchingMaterials(Material mat)
+        {
+            if (mat == null) return null;
+            List<SeedScriptableObject> viableSeeds = new List<SeedScriptableObject>();
+            foreach (SeedScriptableObject seed in spawnList)
+            {
+                if (FindMatchingMaterial(mat, seed.GetViableMaterials()))
+                {
+                    viableSeeds.Add(seed);
+                    print(seed);
+                }
+            }
+            if (viableSeeds.Count > 0)
+                return viableSeeds[Random.Range(0, viableSeeds.Count)];//From the available seeds randomly pick one.
+            else
+                return null;
+
+        }
+        bool FindMatchingMaterial(Material mat, Material[] seedMaterials)
+        {
+
+            for (int i = 0; i < seedMaterials.Length; i++)
+            {
+                if (seedMaterials[i] == mat) return true;//if we find any viable match, return true
+            }
+            //if not always return false;
+            return false;
+        }
+    }
 }
+
 #endif

@@ -14,14 +14,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   prefabObject: {fileID: 7867518703696954974, guid: ec26f01e6b22aa143abe96f429ed57e2,
     type: 3}
+  viableMaterials:
+  - {fileID: 2100000, guid: 5fa8c2cf13a828f49b6ea3c8e175a51e, type: 2}
   offset: {x: 0, y: 0, z: 0}
   randomRotationY: 1
-  rotationRange: 360
+  rotationRange: 90
   randomMode: 1
   scaleMinimum: {x: 1, y: 1, z: 1}
   scaleMaximum: {x: 1.1, y: 1.1, z: 1.1}
-  UniformScaleMinimum: 1
-  UniformScaleMaximum: 3
-  closestAlowedNeighbour: 10
-  maximumNeighbours: 1
+  UniformScaleMinimum: 0.5
+  UniformScaleMaximum: 1
+  closestAlowedNeighbour: 2
+  maximumNeighbours: 10
   maxAngle: 90

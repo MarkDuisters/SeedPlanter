@@ -14,9 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   prefabObject: {fileID: 5899378513549756254, guid: abd980eddece09d438a7aa613922d069,
     type: 3}
+  viableMaterials:
+  - {fileID: 2100000, guid: 1dad34566af373c47bb0a0fbc798368d, type: 2}
   offset: {x: 0, y: 0, z: 0}
   randomRotationY: 1
-  rotationRange: 360
+  rotationRange: 90
   randomMode: 1
   scaleMinimum: {x: 1, y: 1, z: 1}
   scaleMaximum: {x: 6, y: 6, z: 6}

@@ -6,7 +6,7 @@ namespace MD
     {
         [Header("Object or Prefab")]
         [SerializeField] GameObject prefabObject;
-
+        [SerializeField] Material[] viableMaterials;
 
         [Header("Transform options")]
         [Tooltip("Set the look of the object when spawned by adjusting its transform components.")]
@@ -24,7 +24,7 @@ namespace MD
         [SerializeField] float closestAlowedNeighbour;
         [Tooltip("How many neighbours can there maximum be in order to spawn.")]
         [SerializeField] int maximumNeighbours = 10;
-        [Tooltip("What is the maximum surface angle that we are alowed tos pawn at.")]
+        [Tooltip("What is the maximum surface angle that we are allowed to spawn at.")]
         [SerializeField] float maxAngle = 90f;
 
 
@@ -37,7 +37,8 @@ namespace MD
         public int GetMaximumNeighbours() => maximumNeighbours;
         public Quaternion GetRotationY() => Quaternion.Euler(0, Random.Range(0, rotationRange), 0);
         public float GetMaxAngle() => maxAngle;
-
+        public Material[] GetViableMaterials() => viableMaterials;
+        
         public Vector3 GetScaleXYZ()
         {
             Vector3 newSize = prefabObject.transform.localScale;
