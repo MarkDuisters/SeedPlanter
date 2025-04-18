@@ -2,7 +2,7 @@ using UnityEngine;
 namespace MD
 {
     [CreateAssetMenu(fileName = "SeedData", menuName = "ScriptableObjects/SeedObjectData", order = 1)]
-    class SeedScriptableObject : ScriptableObject
+    public class SeedScriptableObject : ScriptableObject
     {
         [Header("Object or Prefab")]
         [SerializeField] GameObject prefabObject;
@@ -35,10 +35,10 @@ namespace MD
 
         public float GetClosestAlowedNeightbour() => closestAlowedNeighbour;
         public int GetMaximumNeighbours() => maximumNeighbours;
-        public Quaternion GetRotationY() => Quaternion.Euler(0, Random.Range(0, rotationRange), 0);
+        public float GetRotationY() => Random.Range(0, rotationRange);
         public float GetMaxAngle() => maxAngle;
         public Material[] GetViableMaterials() => viableMaterials;
-        
+
         public Vector3 GetScaleXYZ()
         {
             Vector3 newSize = prefabObject.transform.localScale;

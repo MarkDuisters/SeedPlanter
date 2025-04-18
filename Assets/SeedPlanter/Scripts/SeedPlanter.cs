@@ -44,7 +44,7 @@ namespace MD
         [SerializeField] DebugInfo debugInfo = DebugInfo.All;
         public bool showRadiusGizmos = false;
 
-
+        #region //Planter logic
         [Button]
         [ContextMenu("Plant Seeds")]
         void PlantSeeds()
@@ -53,6 +53,7 @@ namespace MD
 
             GeneratePositions();
             PopulatePositionsWithObjects();
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(transform.gameObject.scene);
         }
 
         void GeneratePositions()
@@ -80,9 +81,8 @@ namespace MD
                     GameObject getObject = ObjectFabricator(info);
                     if (getObject == null) continue;
                     //  if (getObject == null) PopulatePositionsWithObjects();//Use recursion untill we have a valid match.
-
                     getObject.transform.parent = transform;
-                    if (allignToSurface) getObject.transform.rotation = AllignToSurface(info.normal, getObject.transform.up);
+                    info.SetPrefab(getObject);
                     remainingPositions--;
                 }
             }
@@ -131,7 +131,6 @@ namespace MD
             Perlin noise = new Perlin();
 
             int _maxSteps = (int)(shapeRadius / stepDistance);
-            print(_maxSteps);
             while (!hitSomething && currentStep < _maxSteps)
             {
                 int noiseSeed = Random.Range(0, maxPositions);
@@ -236,7 +235,10 @@ namespace MD
             GameObject go = (GameObject)PrefabUtility.InstantiatePrefab(getSpawnObject.GetObject());
             // occupiedInfo.SetObjectReference(go);//register the object in the current occupied info object.
             go.transform.position = occupiedInfo.position + getSpawnObject.GetOffset();
-            if (getSpawnObject.EnableRandomRotationY()) go.transform.rotation = getSpawnObject.GetRotationY();
+
+            if (allignToSurface) go.transform.rotation = AllignToSurface(occupiedInfo.normal, go.transform);
+            if (getSpawnObject.EnableRandomRotationY()) go.transform.rotation *= Quaternion.Euler(new Vector3(0, getSpawnObject.GetRotationY(), 0));
+
             go.transform.localScale = getSpawnObject.GetScaleXYZ();
             go.transform.parent = transform;
             occupiedInfo.occupied = true;
@@ -258,9 +260,12 @@ namespace MD
             }
         }
 
-        Quaternion AllignToSurface(Vector3 normal, Vector3 upDirection)
+        Quaternion AllignToSurface(Vector3 normal, Transform tr)
         {
-            return Quaternion.FromToRotation(upDirection, normal);
+
+            Quaternion alignmentRotation = Quaternion.FromToRotation(tr.up, normal);
+
+            return alignmentRotation;
         }
 
         [Button]
@@ -272,6 +277,8 @@ namespace MD
                 DestroyImmediate(transform.GetChild(0).gameObject);
             }
             occupiedPositionsList = new List<OccupiedPositionInfo>();
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(transform.gameObject.scene);
+
         }
 
         bool ValidateNeighbours(SeedScriptableObject getSpawnObject, OccupiedPositionInfo occupiedInfo)
@@ -331,6 +338,13 @@ namespace MD
             //if not always return false;
             return false;
         }
+        #endregion
+
+        #region //Callbacks for ObjectToTerrainInsance 
+
+        public SeedScriptableObject[] GetSeedList() => spawnList;
+        public List<OccupiedPositionInfo> GetOccupiedPositionList() => occupiedPositionsList;
+        #endregion
     }
 }
 
