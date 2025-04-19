@@ -2,11 +2,12 @@
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
-using System;
+using Random = UnityEngine.Random;
+
 
 namespace MD
 {
-  //  [ExecuteInEditMode]
+    //  [ExecuteInEditMode]
     [RequireComponent(typeof(SeedPlanter))]
     public class ObjectToTerrainInstance : MonoBehaviour
     {
@@ -96,15 +97,15 @@ namespace MD
 
 
 
-            foreach (OccupiedPositionInfo info in occupiedPositionsList)
+            foreach (Transform info in transform)
             {
-                if (info == null || info.connectedPrefab == null) continue;
+                if (info == null || info == null) continue;
 
                 // Get the actual prefab asset from the scene instance
-                GameObject prefab = PrefabUtility.GetCorrespondingObjectFromSource(info.connectedPrefab);
+                GameObject prefab = PrefabUtility.GetCorrespondingObjectFromSource(info.gameObject);
                 if (prefab == null)
                 {
-                    Debug.LogWarning($"Could not resolve prefab asset from instance: {info.connectedPrefab.name}");
+                    Debug.LogWarning($"Could not resolve prefab asset from instance: {info.name}");
                     continue;
                 }
 
@@ -114,7 +115,7 @@ namespace MD
                     continue;
                 }
 
-                Vector3 worldPosition = info.connectedPrefab.transform.position;
+                Vector3 worldPosition = info.position;
                 Vector3 terrainPosition = worldPosition - terrain.transform.position;
 
                 // Normalize the position relative to the terrain size
@@ -124,12 +125,11 @@ namespace MD
                     terrainPosition.z / terrainData.size.z
                 );
 
-                Vector3 prefabScale = info.connectedPrefab.transform.localScale;
+                Vector3 prefabScale = info.transform.localScale;
 
-                float yDegrees = transform.eulerAngles.y;
+                // Correct rotation conversion
+                float yDegrees = info.rotation.eulerAngles.y;
                 float yRadians = yDegrees * Mathf.Deg2Rad;
-
-
                 TreeInstance tree = new TreeInstance
                 {
                     position = normalizedPos,
