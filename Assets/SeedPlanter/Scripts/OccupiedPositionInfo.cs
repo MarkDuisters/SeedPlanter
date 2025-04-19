@@ -12,8 +12,6 @@ namespace MD
         [ReadOnly] public float angleNormal;
         [ReadOnly] public Vector3 normal;
         [ReadOnly] public Material material;
-        [ReadOnly] public GameObject connectedPrefab;
-
         public OccupiedPositionInfo(Vector3 position, bool occupied, float angleNormal, Vector3 normal, Material material)
         {
             this.position = position;
@@ -22,15 +20,7 @@ namespace MD
             this.normal = normal;
             this.material = material;
         }
-        public void SetPrefab(GameObject prefab)
-        {
-            connectedPrefab = prefab;
-        }
-        public GameObject GetPrefab()
-        {
-            return connectedPrefab;
-        }
-     
+
     }
 }
 #endif

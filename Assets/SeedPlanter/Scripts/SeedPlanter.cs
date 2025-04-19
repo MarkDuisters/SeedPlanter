@@ -23,7 +23,7 @@ namespace MD
         [Tooltip("Amount of times the system should try to fill unoccupied spaces.")]
         [SerializeField] int passes = 1;
         [SerializeField] SeedScriptableObject[] spawnList;
-        List<OccupiedPositionInfo> occupiedPositionsList;
+        [SerializeField] List<OccupiedPositionInfo> occupiedPositionsList;
         [SerializeField][ReadOnly] int remainingPositions;
         [Header("Raytrace settings")]
         [SerializeField] LayerMask layersToHit = -1;
@@ -47,11 +47,9 @@ namespace MD
 
         #region //Planter logic
         [Button]
-        [ContextMenu("Plant Seeds")]
         void PlantSeeds()
         {
             DestroyAllChildren();
-
             GeneratePositions();
             PopulatePositionsWithObjects();
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(transform.gameObject.scene);
@@ -83,7 +81,7 @@ namespace MD
                     if (getObject == null) continue;
                     //  if (getObject == null) PopulatePositionsWithObjects();//Use recursion untill we have a valid match.
                     getObject.transform.parent = transform;
-                    info.SetPrefab(getObject);
+                   // info.SetPrefab(getObject);
                     remainingPositions--;
                 }
             }
@@ -270,7 +268,6 @@ namespace MD
         }
 
         [Button]
-        [ContextMenu("Destroy All Children")]
         void DestroyAllChildren()
         {
             while (transform.childCount > 0)
