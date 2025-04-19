@@ -5,9 +5,10 @@ using UnityEngine.UIElements;
 using Random = UnityEngine.Random;
 using UnityEditor;
 
+
 namespace MD
 {
-    [ExecuteInEditMode]
+    //  [ExecuteInEditMode]
     public class SeedPlanter : MonoBehaviour
     {
         enum SpawnShape { Sphere, HemiSphere };
@@ -22,7 +23,7 @@ namespace MD
         [Tooltip("Amount of times the system should try to fill unoccupied spaces.")]
         [SerializeField] int passes = 1;
         [SerializeField] SeedScriptableObject[] spawnList;
-        [SerializeField] List<OccupiedPositionInfo> occupiedPositionsList;
+        List<OccupiedPositionInfo> occupiedPositionsList;
         [SerializeField][ReadOnly] int remainingPositions;
         [Header("Raytrace settings")]
         [SerializeField] LayerMask layersToHit = -1;
@@ -303,12 +304,6 @@ namespace MD
             return true; // Valid spawn location
         }
 
-        void OnDrawGizmos()
-        {
-            if (!showRadiusGizmos) return;
-            Gizmos.color = new Color(0, 1, 0, 0.5f);
-            Gizmos.DrawWireSphere(transform.position, shapeRadius);
-        }
 
         SeedScriptableObject FindObjectWithMatchingMaterials(Material mat)
         {
@@ -337,6 +332,14 @@ namespace MD
             }
             //if not always return false;
             return false;
+        }
+
+
+        void OnDrawGizmos()
+        {
+            if (!showRadiusGizmos) return;
+            Gizmos.color = new Color(0, 1, 0, 0.5f);
+            Gizmos.DrawWireSphere(transform.position, shapeRadius);
         }
         #endregion
 
