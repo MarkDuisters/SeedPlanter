@@ -6,11 +6,12 @@ using System;
 
 namespace MD
 {
-    [ExecuteInEditMode]
+  //  [ExecuteInEditMode]
     [RequireComponent(typeof(SeedPlanter))]
     public class ObjectToTerrainInstance : MonoBehaviour
     {
-
+        [Header("⚠️ Rotation Limitation\n\nUnity Terrain TreeInstances only support Y-axis rotation.\nFull object rotation (tilt/lean) will be lost.\n\nKeep objects with tilt as GameObjects instead.")]
+        [Header("")]
         [SerializeField] Terrain terrain;
         [SerializeField] SeedScriptableObject[] spawnList;
         [SerializeField] List<OccupiedPositionInfo> occupiedPositionsList;
@@ -93,6 +94,8 @@ namespace MD
                 }
             }
 
+
+
             foreach (OccupiedPositionInfo info in occupiedPositionsList)
             {
                 if (info == null || info.connectedPrefab == null) continue;
@@ -123,11 +126,15 @@ namespace MD
 
                 Vector3 prefabScale = info.connectedPrefab.transform.localScale;
 
+                float yDegrees = transform.eulerAngles.y;
+                float yRadians = yDegrees * Mathf.Deg2Rad;
+
+
                 TreeInstance tree = new TreeInstance
                 {
                     position = normalizedPos,
                     prototypeIndex = prototypeIndex,
-                    rotation = info.connectedPrefab.transform.eulerAngles.y,
+                    rotation = yRadians,
                     widthScale = prefabScale.x,
                     heightScale = prefabScale.y,
                     color = Color.white,
