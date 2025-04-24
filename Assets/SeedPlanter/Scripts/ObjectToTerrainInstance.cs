@@ -29,11 +29,28 @@ namespace MD
                 Debug.LogError("Initialisation failed");
                 return;
             }
+            float progress = 0.5f / 1f;
+            EditorUtility.DisplayProgressBar("Converting to terrain instance", $"Clearing Terrain", progress);
             RemoveAllTerrainTrees();
+            progress = 1f / 1f;
+            EditorUtility.DisplayProgressBar("Converting to terrain instance", $"Clearing Terrain", progress);
+
+            progress = 0.5f / 1f;
+            EditorUtility.DisplayProgressBar("Converting to terrain instance", $"Adding prototypes", progress);
             AddObjectToPrototypeList();
+            progress = 1f / 1f;
+            EditorUtility.DisplayProgressBar("Converting to terrain instance", $"Adding prototypes", progress);
+
+            progress = 0.5f / 1f;
+            EditorUtility.DisplayProgressBar("Converting to terrain instance", $"Painting prototypes", progress);
             PaintObjectsOnTerrain();
+            progress = 1f / 1f;
+            EditorUtility.DisplayProgressBar("Converting to terrain instance", $"Painting prototypes", progress);
+
             EditorUtility.SetDirty(terrain.terrainData);
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(terrain.gameObject.scene);
+
+            EditorUtility.ClearProgressBar();
         }
 
 

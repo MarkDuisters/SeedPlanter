@@ -7,6 +7,7 @@ namespace MD
         [Header("Object or Prefab")]
         [SerializeField] GameObject prefabObject;
         [SerializeField] Material[] viableMaterials;
+        [SerializeField] Texture2D[] viableTextures;
 
         [Header("Transform options")]
         [Tooltip("Set the look of the object when spawned by adjusting its transform components.")]
@@ -38,6 +39,7 @@ namespace MD
         public float GetRotationY() => Random.Range(0, rotationRange);
         public float GetMaxAngle() => maxAngle;
         public Material[] GetViableMaterials() => viableMaterials;
+        public Texture2D[] GetViableTextures() => viableTextures;
 
         public Vector3 GetScaleXYZ()
         {

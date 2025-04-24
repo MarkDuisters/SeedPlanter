@@ -12,13 +12,15 @@ namespace MD
         [ReadOnly] public float angleNormal;
         [ReadOnly] public Vector3 normal;
         [ReadOnly] public Material material;
-        public OccupiedPositionInfo(Vector3 position, bool occupied, float angleNormal, Vector3 normal, Material material)
+        [ReadOnly] public Texture2D texture;
+        public OccupiedPositionInfo(Vector3 position, bool occupied, float angleNormal, Vector3 normal, Material material, Texture2D texture)
         {
             this.position = position;
             this.occupied = occupied;
             this.angleNormal = angleNormal;
             this.normal = normal;
             this.material = material;
+            this.texture = texture;
         }
 
     }
