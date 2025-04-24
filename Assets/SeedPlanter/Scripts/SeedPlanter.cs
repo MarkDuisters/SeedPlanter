@@ -4,6 +4,10 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using Random = UnityEngine.Random;
 using UnityEditor;
+using JimmysUnityUtilities;
+using System.Collections;
+using UnityEditor.PackageManager;
+using System;
 
 
 namespace MD
@@ -11,17 +15,18 @@ namespace MD
     //  [ExecuteInEditMode]
     public class SeedPlanter : MonoBehaviour
     {
-        enum SpawnShape { Sphere, HemiSphere };
+        enum SpawnShape { Sphere, HemiSphere, Circle, HemiCircle };
         [Header("Spawner options")]
         [SerializeField] SpawnShape spawnShape = SpawnShape.Sphere;
         [SerializeField] float shapeRadius = 1f;
         [SerializeField] int maxPositions = 1;
         [SerializeField] bool randomizePointInShape = false;
         [SerializeField] bool allignToSurface = false;
-        [Tooltip("When enabled, instead of randomly spawning an object, collect a list and spawn an object based on a seed's material list.")]
-        [SerializeField] bool useMatchingMaterials = false;
+        enum MatchType { none, material, texture }
+        [Tooltip("When enabled, instead of randomly spawning an object, collect a list and spawn an object based on a seed's material or texture list. none: no cost, material: a bit expensive, texture: very expensive, especially on terrains.")]
+        [SerializeField] MatchType matchType = MatchType.material;
         [Tooltip("Amount of times the system should try to fill unoccupied spaces.")]
-        [SerializeField] int passes = 1;
+        [SerializeField] int populationPasses = 1;
         [SerializeField] SeedScriptableObject[] spawnList;
         [SerializeField] List<OccupiedPositionInfo> occupiedPositionsList;
         [SerializeField][ReadOnly] int remainingPositions;
@@ -29,35 +34,40 @@ namespace MD
         [SerializeField] LayerMask layersToHit = -1;
         enum RayMode { SingleRaycast, Raymarching }
         [Header("Raymarch settings")]
-        [Tooltip("Raycast: Linear, fast and cheap. Raymarching:Flexible, expensive, slower with smaller steps. When enabled a per interval distance step will be taken. This gives the oppurtunity for a more organic position at the cost of more computation. When dissabled a single direction raycast will be used instead.")]
+        [Tooltip("Raycast: Linear, fast and cheap. Raymarching:Flexible, expensive, slower with smaller steps. When enabled a per interval distance step will be taken. This gives the oppurtunity for a more organic position at the cost of more computation.")]
         [SerializeField] RayMode raytraceMode = RayMode.SingleRaycast;
         [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] float stepDistance = 0.1f;
         [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] float gravity = -9.81f; // Adjusted gravity to Earth standard
         [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] Vector3 wind = Vector3.zero;
         enum WindNoiseType { Random, Perlin }
         [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] WindNoiseType windTurbulence = WindNoiseType.Random;
-        [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] float turbulence = 0.1f; // Randomizer value
-        [Tooltip("Adjust the turbulence strength of the wind.")]
-        [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] float turbulenceStrength = 0.1f;
+        [Tooltip("Adjust the turbulence of the wind.")]
+        [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] float turbulence = 1.2f; // Randomizer value
+        [Tooltip("Adjust the turbulence strength.")]
+        [ShowIfEnum("raytraceMode", RayMode.Raymarching)][SerializeField] float turbulenceStrength = 0.44f;
 
         enum DebugInfo { None, All, Seeds, Neighbours }
         [Header("Debugging")]
         [SerializeField] DebugInfo debugInfo = DebugInfo.All;
         public bool showRadiusGizmos = false;
-
         #region //Planter logic
         [Button]
-        void PlantSeeds()
+        void AutoPlantSeeds()
         {
+
             DestroyAllChildren();
+            //   plantCoroutine = EditorCoroutineUtility.StartCoroutine(GeneratePositions(), this);
+            //  populateCoroutine = EditorCoroutineUtility.StartCoroutine(PopulatePositionsWithObjects(), this);
             GeneratePositions();
             PopulatePositionsWithObjects();
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(transform.gameObject.scene);
         }
 
+
         void GeneratePositions()
         {
-            for (int i = 0; i < maxPositions; i++)
+            int i = 0;
+            while (i < maxPositions)
             {
                 switch (raytraceMode)
                 {
@@ -68,12 +78,26 @@ namespace MD
                         CalculateSeedPositionsRayMarching();
                         break;
                 }
+                if (i % 1 == 0)
+                {
+                    // Update the progress bar
+                    float progress = (float)i / (float)maxPositions;
+                    EditorUtility.DisplayProgressBar("Generating Positions", $"Step {i} of {maxPositions}", progress);
+                    // yield return null;
+                    //  yield return new WaitForSeconds(0f);
+                }
+
+                i++;
             }
+            //  yield return null;
+            // When done, clear the progress bar
+            EditorUtility.ClearProgressBar();
         }
 
         void PopulatePositionsWithObjects()
         {
-            for (int i = passes; i > 0; i--)
+            //while (isGeneratingPoints) yield return null;
+            for (int i = populationPasses; i > 0; i--)
             {
                 foreach (OccupiedPositionInfo info in occupiedPositionsList)
                 {
@@ -81,7 +105,7 @@ namespace MD
                     if (getObject == null) continue;
                     //  if (getObject == null) PopulatePositionsWithObjects();//Use recursion untill we have a valid match.
                     getObject.transform.parent = transform;
-                   // info.SetPrefab(getObject);
+                    // info.SetPrefab(getObject);
                     remainingPositions--;
                 }
             }
@@ -95,17 +119,7 @@ namespace MD
             //  for (int i = 0; i < maxPositions; i++)
             //  {
             // Check for collisions (raycasting)
-            if (Physics.Raycast(currentPosition, currentDirection, out RaycastHit hit, shapeRadius, layersToHit))
-            {
-                if (debugInfo == DebugInfo.Seeds || debugInfo == DebugInfo.All) Debug.DrawLine(currentPosition, hit.point, Color.green, 2f);  // Visualize the hit
-                Material getMaterial = null;
-                if (!hit.collider.GetComponent<Terrain>()) getMaterial = hit.collider.GetComponent<Renderer>().sharedMaterial;
-                float angle = Mathf.Abs(Vector3.Angle(Vector3.up, hit.normal));
-                OccupiedPositionInfo info = new OccupiedPositionInfo(hit.point, false, angle, hit.normal, getMaterial);
-
-                occupiedPositionsList.Add(info);
-                // break;  // Stop if a collision is hit
-            }
+            SpecialRaycast(currentPosition, currentDirection, shapeRadius, layersToHit);
 
             if (debugInfo == DebugInfo.Seeds || debugInfo == DebugInfo.All) Debug.DrawRay(currentPosition, currentDirection * shapeRadius, Color.red, 2f);
             //  }
@@ -142,25 +156,92 @@ namespace MD
                 Vector3 segment = currentPosition - oldPosition;
                 float segmentLength = segment.magnitude;
 
-                // Check for collisions (raycasting)
-                if (Physics.Raycast(oldPosition, segment.normalized, out RaycastHit hit, segmentLength, layersToHit))
+                if (SpecialRaycast(oldPosition, segment.normalized, segmentLength, layersToHit))
                 {
-                    if (debugInfo == DebugInfo.Seeds || debugInfo == DebugInfo.All) Debug.DrawLine(oldPosition, hit.point, Color.green, 2f);  // Visualize the hit
-                    Material getMaterial = null;
-                    if (!hit.collider.GetComponent<Terrain>()) getMaterial = hit.collider.GetComponent<Renderer>().sharedMaterial;
-                    float angle = Mathf.Abs(Vector3.Angle(Vector3.up, hit.normal));
-                    OccupiedPositionInfo info = new OccupiedPositionInfo(hit.point, false, angle, hit.normal, getMaterial);
-
-                    occupiedPositionsList.Add(info);
                     hitSomething = true;
                 }
 
-                if (debugInfo == DebugInfo.Seeds || debugInfo == DebugInfo.All) Debug.DrawLine(oldPosition, currentPosition, Color.red, 2f);
-
+                if (currentStep % 2 == 0)
+                {
+                    if (debugInfo == DebugInfo.Seeds || debugInfo == DebugInfo.All) Debug.DrawLine(oldPosition, currentPosition, Color.red, 2f);
+                }
                 oldPosition = currentPosition;
                 currentStep++;
             }
             remainingPositions = occupiedPositionsList.Count;
+        }
+
+        bool SpecialRaycast(Vector3 pos, Vector3 dir, float dist, LayerMask layersToHit)
+        {
+            RaycastHit hit;
+            if (Physics.Raycast(pos, dir, out hit, dist, layersToHit))
+            {
+
+                Collider col = hit.collider;
+                Terrain terrain = col.GetComponent<Terrain>();
+                Material getMaterial = null;
+                if (terrain == null && matchType == MatchType.material) getMaterial = col.GetComponent<Renderer>().sharedMaterial;
+                Texture2D getTexture = null;
+                if (matchType == MatchType.texture)
+                {
+                    getTexture = TryGetTexture(getMaterial);
+
+                    if (terrain != null)
+                    {
+
+                        TerrainTextureDetector detector = col.GetComponent<TerrainTextureDetector>();
+                        if (detector == null) col.gameObject.AddComponent<TerrainTextureDetector>();
+                        int index = detector.GetDominantTextureIndexAt(hit.point);
+                        if (index >= 0 && index < terrain.terrainData.terrainLayers.Length)
+                        {
+                            getTexture = terrain.terrainData.terrainLayers[index].diffuseTexture;
+                        }
+                    }
+                }
+                float angle = Mathf.Abs(Vector3.Angle(Vector3.up, hit.normal));
+                OccupiedPositionInfo info = new OccupiedPositionInfo(hit.point, false, angle, hit.normal, getMaterial, getTexture);
+
+                occupiedPositionsList.Add(info);
+                return true;
+            }
+            return false;
+        }
+
+        Texture2D TryGetTexture(Material mat)
+        {
+            if (mat == null) return null;
+
+            string[] propertyNames = { "_Main", "_BaseMap", "_BaseColorMap", "_MainTex", "_Diffuse", "_Albedo" };
+
+            foreach (var name in propertyNames)
+            {
+                if (mat.HasProperty(name))
+                {
+                    return mat.GetTexture(name) as Texture2D;
+                }
+            }
+
+            return null;
+        }
+
+        Vector3 GetRayDirection()
+        {
+            Vector3 randomDirection = transform.InverseTransformDirection(Random.onUnitSphere);
+            switch (spawnShape)
+            {
+                case SpawnShape.Sphere:
+                    return randomDirection;
+                case SpawnShape.HemiSphere:
+                    randomDirection.y = -Mathf.Abs(randomDirection.y); // Force downward
+                    return randomDirection;
+                case SpawnShape.Circle:
+                    return randomDirection;
+                case SpawnShape.HemiCircle:
+                    randomDirection.y = -Mathf.Abs(randomDirection.y); // Force downward
+                    return randomDirection;
+                default:
+                    return randomDirection;
+            }
         }
 
         Vector3 RandomVector()
@@ -176,7 +257,7 @@ namespace MD
         Vector3 PerlinNoiseWindForce(Perlin noise, int seed, float tick)
         {
             float t = seed + tick * (1f / (turbulence + 0.001f)); // prevents div by zero and keeps smooth
-            // Use scaled and offset coordinates to ensure variation between axes
+                                                                  // Use scaled and offset coordinates to ensure variation between axes
             double x = noise.perlin(t + 100.123, t + 200.456, t + 300.789);
             double y = noise.perlin(t + 400.123, t + 500.456, t + 600.789);
             double z = noise.perlin(t + 700.123, t + 800.456, t + 900.789);
@@ -203,6 +284,12 @@ namespace MD
                     case SpawnShape.HemiSphere:
                         position = transform.position + new Vector3(position.x, -Mathf.Abs(position.y), position.z); // Force downward
                         return position;
+                    case SpawnShape.Circle:
+                        position = transform.position + new Vector3(position.x, 0, position.z); // Force downward
+                        return position;
+                    case SpawnShape.HemiCircle:
+                        position = transform.position + new Vector3(position.x, 0, position.z); // Force downward
+                        return position;
                     default:
                         return position;
                 }
@@ -213,16 +300,21 @@ namespace MD
         GameObject ObjectFabricator(OccupiedPositionInfo occupiedInfo)
         {
             if (occupiedInfo.occupied) return null;//This position already has an object.
-            SeedScriptableObject getSpawnObject;
+            SeedScriptableObject getSpawnObject = null;
             //Place a random object or search based on a matching material in the seed.
-            if (!useMatchingMaterials)
+            switch (matchType)
             {
-                getSpawnObject = spawnList[Random.Range(0, spawnList.Length)];
+                case MatchType.none:
+                    getSpawnObject = spawnList[Random.Range(0, spawnList.Length)];
+                    break;
+                case MatchType.material:
+                    getSpawnObject = FindObjectWithMatchingMaterials(occupiedInfo.material);
+                    break;
+                case MatchType.texture:
+                    getSpawnObject = FindObjectWithMatchingTextures(occupiedInfo.texture);
+                    break;
             }
-            else
-            {
-                getSpawnObject = FindObjectWithMatchingMaterials(occupiedInfo.material);
-            }
+
             if (getSpawnObject == null) return null;
             //Is our location valid to spawn or do we already have a similar object?
             if (!ValidateNeighbours(getSpawnObject, occupiedInfo))
@@ -244,20 +336,7 @@ namespace MD
             return go;
         }
 
-        Vector3 GetRayDirection()
-        {
-            Vector3 randomDirection = transform.InverseTransformDirection(Random.onUnitSphere);
-            switch (spawnShape)
-            {
-                case SpawnShape.Sphere:
-                    return randomDirection;
-                case SpawnShape.HemiSphere:
-                    randomDirection.y = -Mathf.Abs(randomDirection.y); // Force downward
-                    return randomDirection;
-                default:
-                    return randomDirection;
-            }
-        }
+
 
         Quaternion AllignToSurface(Vector3 normal, Transform tr)
         {
@@ -311,7 +390,6 @@ namespace MD
                 if (FindMatchingMaterial(mat, seed.GetViableMaterials()))
                 {
                     viableSeeds.Add(seed);
-                    print(seed);
                 }
             }
             if (viableSeeds.Count > 0)
@@ -331,6 +409,45 @@ namespace MD
             return false;
         }
 
+
+        SeedScriptableObject FindObjectWithMatchingTextures(Texture2D tex)
+        {
+            if (tex == null) return null;
+            List<SeedScriptableObject> viableSeeds = new List<SeedScriptableObject>();
+            foreach (SeedScriptableObject seed in spawnList)
+            {
+                if (FindMatchingTexture(tex, seed.GetViableTextures()))
+                {
+                    viableSeeds.Add(seed);
+                }
+            }
+            if (viableSeeds.Count > 0)
+                return viableSeeds[Random.Range(0, viableSeeds.Count)];//From the available seeds randomly pick one.
+            else
+                return null;
+
+        }
+        bool FindMatchingTexture(Texture2D tex, Texture2D[] seedTextures)
+        {
+
+            for (int i = 0; i < seedTextures.Length; i++)
+            {
+                if (seedTextures[i] == tex) return true;//if we find any viable match, return true
+            }
+            //if not always return false;
+            return false;
+        }
+
+        void OnDisable()
+        {
+            ClearProgressBar();
+        }
+
+        [Button]
+        void ClearProgressBar()
+        {
+            EditorUtility.ClearProgressBar();
+        }
 
         void OnDrawGizmos()
         {

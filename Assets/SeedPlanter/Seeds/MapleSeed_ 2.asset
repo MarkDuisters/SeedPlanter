@@ -16,6 +16,8 @@ MonoBehaviour:
     type: 3}
   viableMaterials:
   - {fileID: 2100000, guid: 1dad34566af373c47bb0a0fbc798368d, type: 2}
+  viableTextures:
+  - {fileID: 2800000, guid: b61e8b4d91ecf9e44ac109586c032e27, type: 3}
   offset: {x: 0, y: 0, z: 0}
   randomRotationY: 1
   rotationRange: 360
