@@ -80,35 +80,38 @@ namespace MD
                 }
                 if (i % 1 == 0)
                 {
-                    // Update the progress bar
                     float progress = (float)i / (float)maxPositions;
                     EditorUtility.DisplayProgressBar("Generating Positions", $"Step {i} of {maxPositions}", progress);
-                    // yield return null;
-                    //  yield return new WaitForSeconds(0f);
                 }
 
                 i++;
             }
-            //  yield return null;
             // When done, clear the progress bar
             EditorUtility.ClearProgressBar();
         }
 
         void PopulatePositionsWithObjects()
         {
-            //while (isGeneratingPoints) yield return null;
             for (int i = populationPasses; i > 0; i--)
             {
+                int counter = 0;
                 foreach (OccupiedPositionInfo info in occupiedPositionsList)
                 {
                     GameObject getObject = ObjectFabricator(info);
                     if (getObject == null) continue;
-                    //  if (getObject == null) PopulatePositionsWithObjects();//Use recursion untill we have a valid match.
                     getObject.transform.parent = transform;
-                    // info.SetPrefab(getObject);
                     remainingPositions--;
+
+                    if (counter % 1 == 0)
+                    {
+                        // Update the progress bar
+                        float progress = (float)counter / (float)maxPositions;
+                        EditorUtility.DisplayProgressBar("Placing objects", $"pass {i} of {populationPasses}, {getObject.name}", progress);
+                    }
+                    counter++;
                 }
             }
+            EditorUtility.ClearProgressBar();
         }
 
         void CalculateSeedPositionsRayCasting()
